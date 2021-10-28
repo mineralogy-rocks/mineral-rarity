@@ -41,15 +41,13 @@ class RruffApi():
             
             async with client.get(f'{self.base_url + details["url"]}', headers={'Connection': 'keep-alive'}) as response:
 
-                print(response)
-
                 with io.BytesIO(await response.content.read()) as file:
-
-                    print(file)
 
                     file.seek(0)
 
                     data = pd.read_csv(file, delimiter='\t')
+
+                    # TODO: add data manipulation here
 
                     setattr(self, details['name'], data)
 
