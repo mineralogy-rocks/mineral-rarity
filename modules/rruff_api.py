@@ -6,6 +6,7 @@ import aiohttp
 import pandas as pd
 
 
+# -*- coding: utf-8 -*-
 
 class RruffApi():
 
@@ -14,16 +15,18 @@ class RruffApi():
 
         self.base_url = 'https://rruff.info/mineral_list/MED/exporting/'
         self.url_mapping = [
-            {'url': '2016_01_15_data/tbl_locality_age_cache_alt.csv', 'name': 'loc_2016'},
-            {'url': '2017_06_22_data/tbl_locality_age_cache_alt.csv', 'name': 'loc_2017'},
-            {'url': '2018_03_27_data/tbl_locality_age_cache_alt.csv', 'name': 'loc_2018'},
-            {'url': '2019_05_22/tbl_locality_age_cache_alt.csv', 'name': 'loc_2019'},
+            {'url': '2016_01_15_data/tbl_locality_age_cache_alt.csv', 'year': '2016'},
+            {'url': '2017_06_22_data/tbl_locality_age_cache_alt.csv', 'year': '2017'},
+            {'url': '2018_03_27_data/tbl_locality_age_cache_alt.csv', 'year': '2018'},
+            {'url': '2019_05_22/tbl_locality_age_cache_alt.csv', 'year': '2019'},
         ]
 
-        self.loc_2016 = None
-        self.loc_2017 = None
-        self.loc_2018 = None
-        self.loc_2019 = None
+        self._loc_2016 = None
+        self._loc_2017 = None
+        self._loc_2018 = None
+        self._loc_2019 = None
+
+        self.locs = pd.DataFrame()
 
 
     async def read_locality_data(self, client, details: dict):
@@ -35,7 +38,7 @@ class RruffApi():
             pandas dataframe
         """
 
-        print(f'Start uploading {details["name"]}...')
+        print(f'Start uploading {details["year"]}...')
 
         try:
             
@@ -47,15 +50,52 @@ class RruffApi():
 
                     data = pd.read_csv(file, delimiter='\t')
 
-                    # TODO: add data manipulation here
+                    data = self.process_initial_locs(data, details['year'])
 
-                    setattr(self, details['name'], data)
+                    setattr(self, f"_loc_{details['year']}", data)
 
                     return data
 
         except Exception as error:
 
             print(f'An error occurred while retrieving data from {self.base_url + details["url"]}: {error}')
+
+
+    def process_initial_locs(self, df, year):
+        """
+        Process initial data uploaded from RRUFF
+        :param df: pandas dataframe
+        :return: processed dataframe, grouped by mindat_id and localities counts
+        """
+
+        df = df.loc[df['at_locality'] == 1]
+
+        df = df.groupby(['mineral_display_name']).agg(
+                locality_counts=pd.NamedAgg(column="mindat_id", aggfunc="count")
+            )
+
+        df['locality_counts'] = pd.to_numeric(df['locality_counts'])
+
+        df.rename(columns={'locality_counts': f'locality_counts_{year}'}, inplace=True)
+
+        return df
+
+
+    def join_locs(self):
+        """
+        Join all dfs and create a subset for comparison
+        :return: set df to self.locs
+        """
+
+        for url in self.url_mapping:
+
+            current_loc = getattr(self, f'_loc_{url["year"]}')
+
+            if len(self.locs):
+                self.locs = self.locs.join(current_loc, how='outer')
+
+            else:
+                self.locs = current_loc
 
 
     async def main(self):
@@ -71,27 +111,10 @@ class RruffApi():
 
         import time
         s = time.perf_counter()
-
+        
         asyncio.run(self.main())
+
+        self.join_locs()
 
         elapsed = time.perf_counter() - s
         print(f"Executed in {elapsed:0.2f} seconds.")
-
-
-
-# create history of locality counts changes
-
-# locs = pd.DataFrame()
-#
-# for loc in ['2016', '2017', '2018', '2019']:
-#
-#     loc = loc.loc[loc['at_locality'] == 1]
-#     loc = loc.groupby(['mineral_display_name']).agg(
-#         locality_counts=pd.NamedAgg(column="mindat_id", aggfunc="count")
-#     )
-#     locs
-#
-# loc_2016 = loc_2016.loc[loc_2016['at_locality'] == 1]
-# loc_2016_counts = loc_2016.groupby(['mineral_display_name']).agg(
-#     locality_counts=pd.NamedAgg(column="mindat_id", aggfunc="count")
-# )
