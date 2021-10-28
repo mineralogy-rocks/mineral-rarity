@@ -1,6 +1,9 @@
 from modules.gsheet_api import GsheetApi
 import pandas as pd
 
+# -*- coding: utf-8 -*-
+
+
 GsheetApi = GsheetApi()
 
 
