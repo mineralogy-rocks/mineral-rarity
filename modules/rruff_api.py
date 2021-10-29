@@ -111,7 +111,7 @@ class RruffApi():
 
         import time
         s = time.perf_counter()
-        
+
         asyncio.run(self.main())
 
         self.join_locs()
