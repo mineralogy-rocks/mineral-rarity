@@ -25,15 +25,15 @@ locs = RruffApi.locs
 
 # Pre-process data and create a list of arrays of [x, y], where x is the locality count and y is mineral count
 
-locs_2016 = locs.loc[locs['locality_counts_2016'].notna()][['locality_counts_2016']]
-locs_2016['mineral_count'] = 1
+locs_2019 = locs.loc[locs['locality_counts_2019'].notna()][['locality_counts_2019']]
+locs_2019['mineral_count'] = 1
 
-locs_2016 = locs_2016.groupby(by='locality_counts_2016').agg(mineral_count=pd.NamedAgg(column="mineral_count", aggfunc="sum")).sort_values(by='mineral_count', ascending=False).reset_index(level=0)
+locs_2019 = locs_2019.groupby(by='locality_counts_2019').agg(mineral_count=pd.NamedAgg(column="mineral_count", aggfunc="sum")).sort_values(by='mineral_count', ascending=False).reset_index(level=0)
 
-locs_2016['locality_counts_2016'] = pd.to_numeric(locs_2016['locality_counts_2016'])
-locs_2016['mineral_count'] = pd.to_numeric(locs_2016['mineral_count'])
+locs_2019['locality_counts_2019'] = pd.to_numeric(locs_2019['locality_counts_2019'])
+locs_2019['mineral_count'] = pd.to_numeric(locs_2019['mineral_count'])
 
-curr_locs = locs_2016.to_numpy()
+curr_locs = locs_2019.to_numpy()
 
 
 # Transform features by scaling each feature to a (0, 1)

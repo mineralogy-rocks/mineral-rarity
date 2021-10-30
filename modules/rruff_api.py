@@ -50,7 +50,9 @@ class RruffApi():
 
                     data = pd.read_csv(file, delimiter='\t')
 
-                    data = self.process_initial_locs(data, details['year'])
+                    if details['year'] != 2019:
+
+                        data = self.process_initial_locs(data, details['year'])
 
                     setattr(self, f"_loc_{details['year']}", data)
 
@@ -118,3 +120,24 @@ class RruffApi():
 
         elapsed = time.perf_counter() - s
         print(f"Executed in {elapsed:0.2f} seconds.")
+
+
+
+    # test localities from other folder
+
+    _loc_min = pd.read_csv('https://rruff.info/mineral_list/MED/exporting/2016_01_15_data/tbl_locality_age_cache.csv', delimiter='\t')
+    _loc = pd.read_csv('https://rruff.info/mineral_list/MED/exporting/2016_01_15_data/tbl_locality.csv',delimiter='\t')
+    _min = pd.read_csv('https://rruff.info/mineral_list/MED/exporting/2016_01_15_data/tbl_mineral.csv',delimiter='\t')
+
+    _loc = _loc.loc[(_loc['is_bottom_level'] == 1) & (_loc['is_meteorite'] == 0)][['locality_id']].set_index('locality_id')
+
+    _loc_min = _loc_min[['locality_id', 'mineral_id']]
+    _loc_min = _loc_min.set_index('locality_id')
+
+    locs = _loc_min.join(_loc, how='inner').reset_index(drop=True).set_index('mineral_id')
+
+
+    mins = locs.join(_min, how='inner')
+
+
+    mins.loc[(mins['mineral_name'] == 'Quartz')]

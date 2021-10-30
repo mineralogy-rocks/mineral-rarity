@@ -29,7 +29,7 @@ locs.rename(columns={'count_locations': 'count_locations_2020'}, inplace=True)
 
 locs['count_locations_2019'] = pd.to_numeric(locs['count_locations_2019'])
 locs['count_locations_2020'] = pd.to_numeric(locs['count_locations_2020'])
-locs['count_locations_2021']= pd.to_numeric(locs['count_locations_2021'])
+locs['count_locations_2021'] = pd.to_numeric(locs['count_locations_2021'])
 
 # Find minerals which transferred from one rarity state to another
 
