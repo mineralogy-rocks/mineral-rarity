@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_samples, silhouette_score
 
 import matplotlib.pyplot as plt
@@ -38,9 +38,8 @@ curr_locs = locs_2019.to_numpy()
 
 # Transform features by scaling each feature to a (0, 1)
 
-mms = MinMaxScaler()
-mms.fit(curr_locs)
-curr_locs_transformed = mms.transform(curr_locs)
+scaler = StandardScaler()
+curr_locs_transformed = scaler.fit_transform(curr_locs)
 
 
 # Find optimum number of clusters
