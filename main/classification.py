@@ -35,11 +35,32 @@ locs_2019['mineral_count'] = pd.to_numeric(locs_2019['mineral_count'])
 
 curr_locs = locs_2019.to_numpy()
 
+locs_flat = np.array([], dtype=int)
+
+for index, row in locs_2019.iterrows():
+    minerals = row['mineral_count']
+    localities = row['locality_counts_2019']
+
+    if minerals > 1:
+        arr = np.empty(int(minerals))
+        arr.fill(localities)
+        locs_flat = np.append(locs_flat, arr)
+
+    else:
+        locs_flat = np.append(locs_flat, localities)
+
+
+plt.hist(locs_flat, density=True, bins=1000)
+plt.axis([0, 5000, 0, 2000])
+plt.margins(tight=True)
+plt.gca().set(title='Frequency Histogram', ylabel='Frequency')
 
 # Transform features by scaling each feature to a (0, 1)
 
 scaler = StandardScaler()
-curr_locs_transformed = scaler.fit_transform(curr_locs)
+curr_locs_transformed = scaler.fit_transform(locs_flat.reshape(-1, 1))
+
+curr_locs_transformed = locs_flat.reshape(-1, 1)
 
 
 # Find optimum number of clusters
