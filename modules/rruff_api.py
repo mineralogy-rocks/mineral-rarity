@@ -15,10 +15,10 @@ class RruffApi():
 
         self.base_url = 'https://rruff.info/mineral_list/MED/exporting/'
         self.url_mapping = [
-            {'url': '2016_01_15_data/tbl_locality_age_cache_alt.csv', 'year': '2016'},
-            {'url': '2017_06_22_data/tbl_locality_age_cache_alt.csv', 'year': '2017'},
-            {'url': '2018_03_27_data/tbl_locality_age_cache_alt.csv', 'year': '2018'},
-            {'url': '2019_05_22/tbl_locality_age_cache_alt.csv', 'year': '2019'},
+            {'url': '2016_01_15_data', 'year': '2016'},
+            {'url': '2017_06_22_data', 'year': '2017'},
+            {'url': '2018_03_27_data', 'year': '2018'},
+            {'url': '2019_05_22', 'year': '2019'},
         ]
 
         self._loc_2016 = None
@@ -42,45 +42,76 @@ class RruffApi():
 
         try:
             
-            async with client.get(f'{self.base_url + details["url"]}', headers={'Connection': 'keep-alive'}) as response:
+            async with client.get(f'{self.base_url + details["url"] + "/tbl_locality_age_cache.csv"}', headers={'Connection': 'keep-alive'}) as response:
 
                 with io.BytesIO(await response.content.read()) as file:
 
                     file.seek(0)
 
-                    data = pd.read_csv(file, delimiter='\t')
+                    _loc_min = pd.read_csv(file, delimiter='\t')
 
-                    if details['year'] != 2019:
+                    # data = self.process_initial_locs(data, details['year'])
 
-                        data = self.process_initial_locs(data, details['year'])
 
-                    setattr(self, f"_loc_{details['year']}", data)
+            async with client.get(f'{self.base_url + details["url"] + "/tbl_locality.csv"}', headers={'Connection': 'keep-alive'}) as response:
 
-                    return data
+                with io.BytesIO(await response.content.read()) as file:
+
+                    file.seek(0)
+
+                    _loc = pd.read_csv(file, delimiter='\t')
+
+
+            async with client.get(f'{self.base_url + details["url"] + "/tbl_mineral.csv"}',
+                                  headers={'Connection': 'keep-alive'}) as response:
+
+                with io.BytesIO(await response.content.read()) as file:
+                    file.seek(0)
+
+                    _min = pd.read_csv(file, delimiter='\t')
+
+
+            data = self.process_initial_locs(_loc_min, _loc, _min, details['year'])
+
+            setattr(self, f'_loc_{details["year"]}', data)
 
         except Exception as error:
 
             print(f'An error occurred while retrieving data from {self.base_url + details["url"]}: {error}')
 
 
-    def process_initial_locs(self, df, year):
+    def process_initial_locs(self, loc_min, loc, min, year):
         """
         Process initial data uploaded from RRUFF
-        :param df: pandas dataframe
-        :return: processed dataframe, grouped by mindat_id and localities counts
+        :param
+            loc_min: pandas dataframe with loc and min ids
+            loc: pandas dataframe with loc ids
+            min: pandas dataframe with min ids
+        :return:
+            processed dataframe, grouped by mineral_name
         """
 
-        df = df.loc[df['at_locality'] == 1]
+        loc = loc.loc[(loc['is_bottom_level'] == 1) & (loc['is_meteorite'] == 0)][['locality_id']]
 
-        df = df.groupby(['mineral_display_name']).agg(
-                locality_counts=pd.NamedAgg(column="mindat_id", aggfunc="count")
-            )
+        loc['locality_id'] = pd.to_numeric(loc['locality_id'])
+        loc_min['locality_id'] = pd.to_numeric(loc_min['locality_id'])
 
-        df['locality_counts'] = pd.to_numeric(df['locality_counts'])
+        loc_min = loc_min[['locality_id', 'mineral_id']]
 
-        df.rename(columns={'locality_counts': f'locality_counts_{year}'}, inplace=True)
+        locs = loc.set_index('locality_id').join(loc_min.set_index('locality_id'), how='inner')
 
-        return df
+        mins = locs.set_index('mineral_id').join(min.set_index('mineral_id'), how='inner')
+
+
+        mins = mins.groupby('mineral_name').agg(
+            locality_counts=pd.NamedAgg(column="mineral_name", aggfunc="count")
+        ).sort_values(by='locality_counts')
+
+        mins['locality_counts'] = pd.to_numeric(mins['locality_counts'])
+
+        mins.rename(columns={'locality_counts': f'locality_counts_{year}'}, inplace=True)
+
+        return mins
 
 
     def join_locs(self):
@@ -120,26 +151,3 @@ class RruffApi():
 
         elapsed = time.perf_counter() - s
         print(f"Executed in {elapsed:0.2f} seconds.")
-
-
-
-# test localities from other folder
-
-_loc_min = pd.read_csv('https://rruff.info/mineral_list/MED/exporting/2016_01_15_data/tbl_locality_age_cache.csv', delimiter='\t')
-_loc = pd.read_csv('https://rruff.info/mineral_list/MED/exporting/2016_01_15_data/tbl_locality.csv',delimiter='\t')
-_min = pd.read_csv('https://rruff.info/mineral_list/MED/exporting/2016_01_15_data/tbl_mineral.csv',delimiter='\t')
-
-_loc = _loc.loc[(_loc['is_bottom_level'] == 1) & (_loc['is_meteorite'] == 0)][['locality_id']]
-
-_loc['locality_id'] = pd.to_numeric(_loc['locality_id'])
-_loc_min['locality_id'] = pd.to_numeric(_loc_min['locality_id'])
-
-_loc_min = _loc_min[['locality_id', 'mineral_id']]
-
-locs = _loc.set_index('locality_id').join(_loc_min.set_index('locality_id'), how='inner')
-
-
-mins = locs.set_index('mineral_id').join(_min.set_index('mineral_id'), how='inner')
-
-
-mins.loc[(mins['mineral_name'] == 'Acanthite')]
