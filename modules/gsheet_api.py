@@ -17,20 +17,15 @@ class GsheetApi():
         self.sheet_mapping = [
             {'ws_name': 'Masterlist2', 'ss_name': 'Status data', 'local_name': 'status_data'},
             {'ws_name': 'Masterlist2', 'ss_name': 'Nickel-Strunz', 'local_name': 'nickel_strunz'},
-            {'ws_name': 'Groups', 'ss_name': 'Groups_ver1', 'local_name': 'groups_formulas'},
             {'ws_name': 'Masterlist2', 'ss_name': 'Names data', 'local_name': 'names'},
-            {'ws_name': 'Locality_count_rruff', 'ss_name': 'loc_2019', 'local_name': 'loc_2019'},
-            {'ws_name': 'Locality_count_rruff', 'ss_name': 'loc_2020', 'local_name': 'loc_2020'},
-            {'ws_name': 'Locality_count_rruff', 'ss_name': 'loc_2021', 'local_name': 'loc_2021'},
+            {'ws_name': 'Locality_count_rruff', 'ss_name': 'loc_2019', 'local_name': 'locs'},
         ]
         self.status_data = None
         self.nickel_strunz = None
         self.groups_formulas = None
         self.names = None
 
-        self.loc_2018 = None
-        self.loc_2019 = None
-        self.loc_2020 = None
+        self.locs = None
 
 
     def get_local_name(self, ss_name):
@@ -67,14 +62,19 @@ class GsheetApi():
         agc = await self.agcm(self.get_creds).authorize()
         try:
             print(f'started grabbing data of {sheet_name}')
+
             ags = await agc.open(worksheet_name)
             agw = await ags.worksheet(sheet_name)
             data = await agw.get_all_values()
+
             print(f'Processed {sheet_name}')
+
             headers = data.pop(0)
             output = pd.DataFrame(data, columns=headers).replace(r'', np.nan)
             local_var = self.get_local_name(ss_name=sheet_name)[0]
+
             setattr(self, local_var, output)
+
             return output
         except gspread.exceptions.GSpreadException as error:
             print(error)

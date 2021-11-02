@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 from modules.rruff_api import RruffApi
+from modules.gsheet_api import GsheetApi
 
 # -*- coding: utf-8 -*-
 """
@@ -19,6 +20,8 @@ Functions for classifying mineral locality counts into clusters/categories
 RruffApi = RruffApi()
 RruffApi.run_main()
 
+GsheetApi = GsheetApi()
+GsheetApi.run_main()
 
 locs = RruffApi.locs
 
