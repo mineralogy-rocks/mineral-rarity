@@ -2,14 +2,15 @@ import pandas as pd
 import numpy as np
 
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_samples, silhouette_score
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-from modules.rruff_api import RruffApi
 from modules.gsheet_api import GsheetApi
+from functions import helpers
 
 # -*- coding: utf-8 -*-
 """
@@ -17,54 +18,17 @@ from modules.gsheet_api import GsheetApi
 Functions for classifying mineral locality counts into clusters/categories
 """
 
-RruffApi = RruffApi()
-RruffApi.run_main()
-
 GsheetApi = GsheetApi()
 GsheetApi.run_main()
 
-locs = RruffApi.locs
+locs = GsheetApi.locs.copy()
 
 
 # Pre-process data and create a list of arrays of [x, y], where x is the locality count and y is mineral count
 
-locs_2019 = locs.loc[locs['locality_counts_2019'].notna()][['locality_counts_2019']]
-locs_2019['mineral_count'] = 1
+locs_original, locs_non_scaled, locs_transformed = helpers.transform_data(locs)
 
-locs_2019 = locs_2019.groupby(by='locality_counts_2019').agg(mineral_count=pd.NamedAgg(column="mineral_count", aggfunc="sum")).sort_values(by='mineral_count', ascending=False).reset_index(level=0)
-
-locs_2019['locality_counts_2019'] = pd.to_numeric(locs_2019['locality_counts_2019'])
-locs_2019['mineral_count'] = pd.to_numeric(locs_2019['mineral_count'])
-
-curr_locs = locs_2019.to_numpy()
-
-locs_flat = np.array([], dtype=int)
-
-for index, row in locs_2019.iterrows():
-    minerals = row['mineral_count']
-    localities = row['locality_counts_2019']
-
-    if minerals > 1:
-        arr = np.empty(int(minerals))
-        arr.fill(localities)
-        locs_flat = np.append(locs_flat, arr)
-
-    else:
-        locs_flat = np.append(locs_flat, localities)
-
-
-plt.hist(locs_flat, density=True, bins=1000)
-plt.axis([0, 5000, 0, 2000])
-plt.margins(tight=True)
-plt.gca().set(title='Frequency Histogram', ylabel='Frequency')
-
-# Transform features by scaling each feature to a (0, 1)
-
-scaler = StandardScaler()
-curr_locs_transformed = scaler.fit_transform(locs_flat.reshape(-1, 1))
-
-curr_locs_transformed = locs_flat.reshape(-1, 1)
-
+locs_transformed = locs_transformed.to_numpy()
 
 # Find optimum number of clusters
 
@@ -76,7 +40,7 @@ sum_of_squared_distances = []
 
 for n_clusters in range_n_clusters:
     km = KMeans(n_clusters=n_clusters)
-    km = km.fit(curr_locs_transformed)
+    km = km.fit(locs_transformed)
     sum_of_squared_distances.append(km.inertia_)
 
 
@@ -87,7 +51,7 @@ plt.xlabel('Number of clusters')
 plt.ylabel('Sum of squared distances')
 plt.title('Elbow Method For Optimal Number of Clusters')
 
-plt.savefig("figures/knn/elbow_n_clusters.jpeg", dpi=300, format='jpeg')
+plt.savefig("figures/k-means/elbow_n_clusters.jpeg", dpi=300, format='jpeg')
 
 plt.close('all')
 
@@ -109,19 +73,19 @@ for n_clusters in range_n_clusters:
     # The (n_clusters+1)*10 is for inserting blank space between silhouette
     # plots of individual clusters, to demarcate them clearly.
 
-    ax1.set_ylim([0, len(curr_locs_transformed) + (n_clusters + 1) * 10])
+    ax1.set_ylim([0, len(locs_transformed) + (n_clusters + 1) * 10])
 
     # Initialize the clusterer with n_clusters value and a random generator
     # seed of 10 for reproducibility.
 
     clusterer = KMeans(n_clusters=n_clusters, random_state=10)
-    cluster_labels = clusterer.fit_predict(curr_locs_transformed)
+    cluster_labels = clusterer.fit_predict(locs_transformed)
 
     # The silhouette_score gives the average value for all the samples.
     # This gives a perspective into the density and separation of the formed
     # clusters
 
-    silhouette_avg = silhouette_score(curr_locs_transformed, cluster_labels)
+    silhouette_avg = silhouette_score(locs_transformed, cluster_labels)
     print(
         "For n_clusters =",
         n_clusters,
@@ -130,7 +94,7 @@ for n_clusters in range_n_clusters:
     )
 
     # Compute the silhouette scores for each sample
-    sample_silhouette_values = silhouette_samples(curr_locs_transformed, cluster_labels)
+    sample_silhouette_values = silhouette_samples(locs_transformed, cluster_labels)
 
     y_lower = 10
     for i in range(n_clusters):
@@ -173,7 +137,7 @@ for n_clusters in range_n_clusters:
     # 2nd Plot showing the actual clusters formed
     colors = cm.nipy_spectral(cluster_labels.astype(float) / n_clusters)
     ax2.scatter(
-        curr_locs_transformed[:, 0], curr_locs_transformed[:, 1], marker=".", s=30, lw=0, alpha=0.7, c=colors, edgecolor="k"
+        locs_transformed[:, 0], locs_transformed[:, 1], marker=".", s=30, lw=0, alpha=0.7, c=colors, edgecolor="k"
     )
 
     # Labeling the clusters
@@ -203,20 +167,21 @@ for n_clusters in range_n_clusters:
         fontweight="bold",
     )
 
-    plt.savefig(f"figures/knn/silhouette_{n_clusters}_clusters.jpeg", dpi=300, format='jpeg')
+    plt.savefig(f"figures/k-means/silhouette_{n_clusters}_clusters.jpeg", dpi=300, format='jpeg')
 
     plt.close('all')
 
 
+# K-means classification #
 
-kmeans = KMeans(n_clusters=6).fit(curr_locs)
+N_CLUSTERS = 3
 
-kmeans.cluster_centers_
+kmeans = KMeans(init='k-means++', n_clusters=N_CLUSTERS, n_init=1, max_iter=300)
 
-kmeans.n_features_in_
+kmeans.fit(locs_transformed)
 
-kmeans = KMeans(n_clusters=6).fit_predict(curr_locs)
+pred_classes = kmeans.predict(locs_transformed)
 
-kmeans.cluster_centers_
-
-kmeans.n_features_in_
+# add labels to original data
+for cluster in range(N_CLUSTERS):
+    locs_non_scaled.loc[locs_non_scaled.index.isin(*np.where(pred_classes == cluster)), 'cluster'] = cluster

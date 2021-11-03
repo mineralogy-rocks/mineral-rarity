@@ -7,30 +7,28 @@ from sklearn.preprocessing import StandardScaler
 
 
 def transform_data(df):
-    # for further studying the results, you will need original data
+    """ Transform data and return original df too """
     df_original = df.copy()
 
-    df_transformed = _construct_features(df)
-    df_transformed = _standardize_features(df_transformed)
-    df_transformed = _scale_features(df_transformed)
+    df_transformed = _construct_locality_features(df)
+    df_transformed_non_scaled = df_transformed.copy()
+    df_transformed = _standardize_features(df_transformed, skewed_features=['mineral_count', 'locality_counts'])
+    df_transformed = _scale_features(df_transformed, features_to_scale=['mineral_count', 'locality_counts'])
 
-    return df_original, df_transformed
+    return df_original, df_transformed_non_scaled, df_transformed
 
 
-def _construct_features(df):
-    # adding new features that better represent the problem
-    # you need to have domain knowledge
+def _construct_locality_features(df):
+    """ Create initial df with all features transformed """
 
-    # example of creating a new function based on two existing ones from real estate domain
-    # - cost of buying a house is 6% of the house price
-    # - standard deposit is 10% of price
-    df['first_payment'] = df['house_price'] * 0.06 + df['house_price'] * 0.1
+    df = df.loc[df['locality_counts'].notna()][['locality_counts']]
+    df['locality_counts'] = pd.to_numeric(df['locality_counts'])
 
-    # anuitete formula https://myfin.by/wiki/term/annuitetnyj-platyozh
-    n = 360         # loan for 30 years
-    i = 0.00283     # loan rate 3.4%
-    k = (i * (1 + i) ** n) / ((1 + i) ** n - 1)
-    df['monthly_payment'] = (df['house_price'] - df['house_price'] * 0.1) * k
+    df['mineral_count'] = 1
+
+    df = df.groupby(by='locality_counts').agg(mineral_count=pd.NamedAgg(column="mineral_count", aggfunc="sum"))
+    df = df.sort_values(by=['mineral_count', 'locality_counts'], ascending=(False, True), axis=0).reset_index(
+        level=0)
 
     return df
 
