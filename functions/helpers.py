@@ -13,9 +13,10 @@ def transform_data(df):
     df_transformed = _construct_locality_features(df)
     df_transformed_non_scaled = df_transformed.copy()
     df_transformed = _standardize_features(df_transformed, skewed_features=['mineral_count', 'locality_counts'])
+    df_transformed_standardized = df_transformed.copy()
     df_transformed = _scale_features(df_transformed, features_to_scale=['mineral_count', 'locality_counts'])
 
-    return df_original, df_transformed_non_scaled, df_transformed
+    return df_original, df_transformed_non_scaled, df_transformed, df_transformed_standardized
 
 
 def _construct_locality_features(df):

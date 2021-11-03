@@ -26,9 +26,38 @@ locs = GsheetApi.locs.copy()
 
 # Pre-process data and create a list of arrays of [x, y], where x is the locality count and y is mineral count
 
-locs_original, locs_non_scaled, locs_transformed = helpers.transform_data(locs)
+locs_original, locs_non_scaled, locs_transformed, locs_standardized = helpers.transform_data(locs)
 
 locs_transformed = locs_transformed.to_numpy()
+
+
+# Original non-scaled data scatter-plot
+
+plt.scatter(locs_non_scaled['locality_counts'], locs_non_scaled['mineral_count'], color='#5FD6D1', marker='o', s=20,
+            edgecolors='black', linewidths=0.1)
+
+plt.xlabel('Locality count')
+plt.ylabel('Mineral count')
+plt.title('Mineral - Locality pairs')
+
+plt.savefig(f"figures/mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
+# Log-transformed data scatter-plot
+
+plt.scatter(locs_standardized['locality_counts'], locs_standardized['mineral_count'], color='#5FD6D1', marker='o', s=20,
+            edgecolors='black', linewidths=0.1)
+
+plt.xlabel('Log (Locality count)')
+plt.ylabel('Log (Mineral count)')
+plt.title('Mineral - Locality pairs')
+
+plt.savefig(f"figures/mineral_locality_pairs_log_transformed.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
 
 # Find optimum number of clusters
 
@@ -172,9 +201,9 @@ for n_clusters in range_n_clusters:
     plt.close('all')
 
 
-# K-means classification #
+# K-means classification 2-D
 
-N_CLUSTERS = 3
+N_CLUSTERS = 4
 
 kmeans = KMeans(init='k-means++', n_clusters=N_CLUSTERS, n_init=1, max_iter=300)
 
@@ -183,5 +212,35 @@ kmeans.fit(locs_transformed)
 pred_classes = kmeans.predict(locs_transformed)
 
 # add labels to original data
-for cluster in range(N_CLUSTERS):
-    locs_non_scaled.loc[locs_non_scaled.index.isin(*np.where(pred_classes == cluster)), 'cluster'] = cluster
+for n_cluster in range(N_CLUSTERS):
+    locs_non_scaled.loc[locs_non_scaled.index.isin(*np.where(pred_classes == n_cluster)), 'cluster'] = n_cluster
+
+## Scatter plot of the classification
+
+plt.scatter(locs_transformed[:, 0], locs_transformed[:, 1], c=pred_classes, s=50, cmap='viridis')
+
+centers = kmeans.cluster_centers_
+plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+
+plt.savefig(f"figures/k-means/classification_output.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
+## One-dimensional classification 1-D
+
+N_CLUSTERS = 6
+
+kmeans = KMeans(n_clusters=N_CLUSTERS).fit(locs['locality_counts'].to_numpy(dtype=int).reshape(-1,1))
+
+pred_classes = kmeans.predict(locs['locality_counts'].to_numpy(dtype=int).reshape(-1,1))
+
+for n_cluster in range(N_CLUSTERS):
+    locs.loc[locs.index.isin(*np.where(pred_classes == n_cluster)), 'cluster'] = n_cluster
+
+
+plt.scatter(locs['locality_counts'].to_numpy(dtype=int).reshape(-1,1)[:, 0], locs.index.to_numpy(), c=pred_classes, s=50, cmap='viridis')
+
+plt.savefig(f"figures/k-means/classification_output.jpeg", dpi=300, format='jpeg')
+
+plt.close()
