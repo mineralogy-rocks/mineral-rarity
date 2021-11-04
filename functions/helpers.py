@@ -5,19 +5,35 @@ from sklearn.preprocessing import StandardScaler
 
 # -*- coding: utf-8 -*-
 
+class Scaler():
+    def __init__(self):
+        self.scaler = StandardScaler()
 
-def transform_data(df):
+    def scale_features(self, np_array):
+        """Scale by StandardScale of the dataset"""
+
+        self.scaler.fit(np_array)
+
+        return self.scaler.transform(np_array)
+
+    def descale_features(self, np_array):
+        """ Descale by StandardScale of the dataset"""
+
+        return self.scaler.inverse_transform(np_array)
+
+
+def transform_data(df, ScalerClass):
     """ Transform data and return transformed, raw, scaled, normalized datasets """
 
     df = df.loc[df['locality_counts'].notna()]
     df['locality_counts'] = pd.to_numeric(df['locality_counts'])
 
-    raw_locality_mineral_pairs = _construct_mineral_locality_pairs(df)
+    raw_locality_mineral_pairs = _construct_mineral_locality_pairs(df.copy())
     log_locality_mineral_pairs = _standardize_features(raw_locality_mineral_pairs.copy(), skewed_features=['mineral_count', 'locality_counts'])
 
-    raw_locality_1d = _construct_locality_features(df)
+    raw_locality_1d = _construct_locality_features(df.copy())
     log_locality_1d = _standardize_features(raw_locality_1d)
-    scaled_locality_1d = _scale_features(log_locality_1d)
+    scaled_locality_1d = ScalerClass.scale_features(log_locality_1d)
 
     return raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d
 
@@ -55,11 +71,3 @@ def _standardize_features(data, skewed_features=[]):
         data = np.log(data)
 
     return data
-
-
-def _scale_features(np_array):
-    """StandardScale of the dataset"""
-
-    scaler = StandardScaler()
-
-    return scaler.fit_transform(np_array)
