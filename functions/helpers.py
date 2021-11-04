@@ -7,23 +7,26 @@ from sklearn.preprocessing import StandardScaler
 
 
 def transform_data(df):
-    """ Transform data and return original df too """
-    df_original = df.copy()
+    """ Transform data and return transformed, raw, scaled, normalized datasets """
 
-    df_transformed = _construct_locality_features(df)
-    df_transformed_non_scaled = df_transformed.copy()
-    df_transformed = _standardize_features(df_transformed, skewed_features=['mineral_count', 'locality_counts'])
-    df_transformed_standardized = df_transformed.copy()
-    df_transformed = _scale_features(df_transformed, features_to_scale=['mineral_count', 'locality_counts'])
-
-    return df_original, df_transformed_non_scaled, df_transformed, df_transformed_standardized
-
-
-def _construct_locality_features(df):
-    """ Create initial df with all features transformed """
-
-    df = df.loc[df['locality_counts'].notna()][['locality_counts']]
+    df = df.loc[df['locality_counts'].notna()]
     df['locality_counts'] = pd.to_numeric(df['locality_counts'])
+
+    raw_locality_mineral_pairs = _construct_mineral_locality_pairs(df)
+    log_locality_mineral_pairs = _standardize_features(raw_locality_mineral_pairs.copy(), skewed_features=['mineral_count', 'locality_counts'])
+
+    raw_locality_1d = _construct_locality_features(df)
+    log_locality_1d = _standardize_features(raw_locality_1d)
+    scaled_locality_1d = _scale_features(log_locality_1d)
+
+    return raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d
+
+
+def _construct_mineral_locality_pairs(df):
+    """ Create dataframe grouped by locality counts
+    Returns:
+        df['locality_count', 'mineral_count']
+    """
 
     df['mineral_count'] = 1
 
@@ -34,21 +37,29 @@ def _construct_locality_features(df):
     return df
 
 
-def _standardize_features(df: pd.DataFrame, skewed_features=[]):
-    """Log transform of the df"""
+def _construct_locality_features(df):
+    """ Create numpy array with localities features in (-1,1) shape, eg [ [1], [2], [3] ] """
 
-    for feature in skewed_features:
-        df[feature] = np.log(df[feature])
+    df = df['locality_counts'].to_numpy(dtype=int).reshape(-1, 1)
 
     return df
 
 
-def _scale_features(df, features_to_scale=[]):
+def _standardize_features(data, skewed_features=[]):
+    """ Log transform of the df or numpy array """
+
+    if isinstance(data, pd.DataFrame):
+        for feature in skewed_features:
+            data[feature] = np.log(data[feature])
+    else:
+        data = np.log(data)
+
+    return data
+
+
+def _scale_features(np_array):
     """StandardScale of the dataset"""
 
     scaler = StandardScaler()
 
-    for feature in features_to_scale:
-        df[[feature]] = scaler.fit_transform(df[[feature]])
-
-    return df
+    return scaler.fit_transform(np_array)
