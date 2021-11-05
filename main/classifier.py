@@ -226,7 +226,7 @@ plt.close()
 ### Get decision boundaries for each cluster by running a prediction
 
 # Step size of the test set. Decrease to increase the quality of the VQ.
-h = 0.03
+h = 0.02
 
 # These are already scaled to locs_min=1 and locs_max set above, cause the source of data remains the same
 x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
@@ -243,19 +243,23 @@ descaled = np.exp(log_descaled)
 descaled = np.sort(descaled, axis=0)
 descaled = descaled.ravel()
 
-locs_test = pd.DataFrame({ 'locality_counts': descaled, 'predicted': xx_predicated })
+locs_classes = pd.DataFrame({ 'locality_counts': descaled, 'predicted': xx_predicated })
+
+locs_classes = locs_classes.groupby('predicted')[['locality_counts']].agg(lambda x: str(np.floor(x.min())) + '-' + str(np.floor(x.max())))
+
+locs_classes.sort_values('locality_counts', inplace=True)
 
 # Rare minerals
 # 1
 # 2-4
 # 5-16
 
-# Questionable minerals
+# Transitional minerals
 # 17-75
 
 # Widespread minerals
-# 76-589
-# > 593
+# 76-590
+# > 590
 
 # kernel density estimation (frequencies of raw locality counts)
 
