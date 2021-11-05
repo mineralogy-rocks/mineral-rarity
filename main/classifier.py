@@ -60,6 +60,31 @@ plt.savefig(f"figures/log_mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
+# Original non-scaled locality counts histogram
+
+plt.hist(raw_locality_mineral_pairs['locality_counts'], bins=1000)
+
+plt.xlabel('Locality count')
+plt.ylabel('Mineral count')
+plt.title('Mineral - Locality pairs')
+
+plt.savefig(f"figures/raw_locality_counts_histogram.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
+# Standardized and Scaled locality counts histogram
+
+plt.hist(scaled_locality_1d, bins=1000)
+
+plt.xlabel('Locality count')
+plt.ylabel('Mineral count')
+plt.title('Mineral - Locality pairs')
+
+plt.savefig(f"figures/scaled_locality_counts_histogram.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
 # Find optimum number of clusters for k-Means
 
 N_CLUSTERS = range(2, 15)
@@ -249,6 +274,9 @@ locs_classes = locs_classes.groupby('predicted')[['locality_counts']].agg(lambda
 
 locs_classes.sort_values('locality_counts', inplace=True)
 
+
+### Classification according to k-means 1-d
+
 # Rare minerals
 # 1
 # 2-4
@@ -261,9 +289,11 @@ locs_classes.sort_values('locality_counts', inplace=True)
 # 76-590
 # > 590
 
-# kernel density estimation (frequencies of raw locality counts)
 
-kde = KernelDensity(kernel='gaussian', bandwidth=0.5).fit(locs_1d)
+# Kernel density estimation (frequencies of raw locality counts)
+
+kde = KernelDensity(kernel='gaussian', bandwidth=0.5)
+kde.fit(scaled_locality_1d)
 
 s = np.linspace(0,80000)
 e = kde.score_samples(s.reshape(-1,1))
