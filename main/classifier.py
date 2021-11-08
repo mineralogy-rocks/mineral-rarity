@@ -278,27 +278,27 @@ locs_classes.sort_values('locality_counts', inplace=True)
 ### Classification according to k-means 1-d
 
 # Rare minerals
-# 1
+# 1 - Endemic
 # 2-4
 # 5-16
 
 # Transitional minerals
 # 17-75
 
-# Widespread minerals
+# Ubiquitous minerals
 # 76-590
 # > 590
 
 
 # Kernel density estimation (frequencies of raw locality counts)
 
-kde = KernelDensity(kernel='gaussian', bandwidth=0.5)
-kde.fit(scaled_locality_1d)
+kde = KernelDensity(kernel='gaussian', bandwidth=0.1)
+kde.fit(locs['locality_counts'].to_numpy(dtype=int).reshape(-1,1))
 
-s = np.linspace(0,80000)
+s = np.linspace(1, 1000)
 e = kde.score_samples(s.reshape(-1,1))
 plt.plot(s, e)
 
-plt.savefig(f"figures/k-means/classification_output.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/kde/classification_output.jpeg", dpi=300, format='jpeg')
 
 plt.close()
