@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import Scaler, transform_data
 
 # -*- coding: utf-8 -*-
 """
@@ -13,7 +12,6 @@ using k-means clustering
 
 
 GsheetApi = GsheetApi()
-Scaler = Scaler()
 GsheetApi.run_main()
 
 locs = GsheetApi.locs.copy()

@@ -8,6 +8,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from sklearn.neighbors import KernelDensity
+from scipy.signal import argrelextrema
+
 from modules.gsheet_api import GsheetApi
 from functions.helpers import Scaler, transform_data
 
@@ -36,15 +38,12 @@ raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d = tra
 
 # Kernel Density Estimate on 1-d data
 
-N = 100
-
-X = locs['locality_counts'].to_numpy(dtype=int)
-X.sort()
-X = X.reshape(-1, 1)
+N = len(locs)
 
 X = scaled_locality_1d
+x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
 
-X_plot = np.linspace(scaled_locality_1d.min() - 2, scaled_locality_1d.max() + 2, 1000)[:, np.newaxis]
+X_plot = np.linspace(x_min - 1, x_max + 1, 1000)[:, np.newaxis]
 
 true_dens = 0.3 * norm(0, 1).pdf(X_plot[:, 0]) + 0.7 * norm(10, 1).pdf(X_plot[:, 0])
 
@@ -52,7 +51,7 @@ fig, ax = plt.subplots()
 ax.fill(X_plot[:, 0], true_dens, fc="black", alpha=0.2, label="input distribution")
 colors = ["navy", "cornflowerblue", "darkorange"]
 kernels = ["gaussian", "tophat", "epanechnikov"]
-lw = 2
+lw = 1.5
 
 for color, kernel in zip(colors, kernels):
     kde = KernelDensity(kernel=kernel, bandwidth=0.4).fit(X)
@@ -66,7 +65,7 @@ for color, kernel in zip(colors, kernels):
         label="kernel = '{0}'".format(kernel),
     )
 
-ax.text(6, 0.38, "N={0} points".format(N))
+ax.text(4, 0.44, "N={0} points".format(N))
 
 ax.legend(loc="upper right")
 ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "+k")
@@ -75,3 +74,34 @@ ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "+k")
 plt.savefig(f"figures/kde/classification_output.jpeg", dpi=300, format='jpeg')
 
 plt.close()
+
+
+## Get decision boundaries
+
+X = scaled_locality_1d
+x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
+
+X_plot = np.linspace(x_min - 1, x_max + 1, 1000)[:, np.newaxis]
+
+kde = KernelDensity(kernel="epanechnikov", bandwidth=0.4)
+kde.fit(X)
+
+log_dens = kde.score_samples(X_plot)
+
+mi, ma = argrelextrema(log_dens, np.less)[0], argrelextrema(log_dens, np.greater)[0]
+clusters = np.concatenate([scaled_locality_1d[mi], scaled_locality_1d[ma]])
+
+
+# Obtain labels for each point in test array. Use last trained model.
+
+log_descaled = Scaler.descale_features(clusters.reshape(-1,1))
+
+descaled = np.exp(log_descaled)
+descaled = np.sort(descaled, axis=0)
+descaled = descaled.ravel()
+
+locs_classes = pd.DataFrame({ 'locality_counts': descaled, 'predicted': xx_predicated })
+
+locs_classes = locs_classes.groupby('predicted')[['locality_counts']].agg(lambda x: str(np.floor(x.min())) + '-' + str(np.floor(x.max())))
+
+locs_classes.sort_values('locality_counts', inplace=True)
