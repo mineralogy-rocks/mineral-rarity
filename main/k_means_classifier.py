@@ -3,7 +3,8 @@ import numpy as np
 
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
-from sklearn.neighbors import KernelDensity
+
+from scipy.stats import norm
 
 import matplotlib
 matplotlib.use('Agg')
@@ -17,7 +18,7 @@ from functions.helpers import Scaler, transform_data
 """
 @author: Liubomyr Gavryliv
 Functions for classifying mineral locality counts into clusters/categories
-using k-means clustering and kernel density estimate
+using k-means clustering
 """
 
 GsheetApi = GsheetApi()
@@ -25,6 +26,8 @@ Scaler = Scaler()
 GsheetApi.run_main()
 
 locs = GsheetApi.locs.copy()
+
+locs['locality_counts'] = pd.to_numeric(locs['locality_counts'])
 
 
 # Pre-process data and create a list of arrays of [x, y], where x is the locality count and y is mineral count
@@ -280,9 +283,9 @@ locs_classes.sort_values('locality_counts', inplace=True)
 # Rare minerals
 # 1 - Endemic
 # 2-4
-# 5-16
 
 # Transitional minerals
+# 5-16
 # 17-75
 
 # Ubiquitous minerals
@@ -290,15 +293,11 @@ locs_classes.sort_values('locality_counts', inplace=True)
 # > 590
 
 
-# Kernel density estimation (frequencies of raw locality counts)
+# Quantiles of raw localities data
 
-kde = KernelDensity(kernel='gaussian', bandwidth=0.1)
-kde.fit(locs['locality_counts'].to_numpy(dtype=int).reshape(-1,1))
+len(locs.loc[locs['locality_counts'] <= 4]) / len(locs) * 100 # Rare minerals volume
+len(locs.loc[locs['locality_counts'] > 18]) / len(locs) * 100 # Ubiquitous minerals volume
+len(locs.loc[(locs['locality_counts'] > 4) & (locs['locality_counts'] <= 18)]) / len(locs) * 100 # Transitional minerals volume
 
-s = np.linspace(1, 1000)
-e = kde.score_samples(s.reshape(-1,1))
-plt.plot(s, e)
-
-plt.savefig(f"figures/kde/classification_output.jpeg", dpi=300, format='jpeg')
-
-plt.close()
+for q in [0.25, 0.5, 0.75]:
+    print(f"{q} quantile: - {np.quantile(locs['locality_counts'].to_numpy(dtype=int), q=q)}")
