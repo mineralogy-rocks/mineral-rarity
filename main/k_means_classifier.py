@@ -291,13 +291,3 @@ locs_classes.sort_values('locality_counts', inplace=True)
 # Ubiquitous minerals
 # 76-590
 # > 590
-
-
-# Quantiles of raw localities data
-
-len(locs.loc[locs['locality_counts'] <= 4]) / len(locs) * 100 # Rare minerals volume
-len(locs.loc[locs['locality_counts'] > 18]) / len(locs) * 100 # Ubiquitous minerals volume
-len(locs.loc[(locs['locality_counts'] > 4) & (locs['locality_counts'] <= 18)]) / len(locs) * 100 # Transitional minerals volume
-
-for q in [0.25, 0.5, 0.75]:
-    print(f"{q} quantile: - {np.quantile(locs['locality_counts'].to_numpy(dtype=int), q=q)}")

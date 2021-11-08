@@ -33,6 +33,7 @@ locs['locality_counts'] = pd.to_numeric(locs['locality_counts'])
 
 raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d = transform_data(locs, Scaler)
 
+
 # Kernel Density Estimate on 1-d data
 
 N = 100
