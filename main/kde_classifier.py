@@ -36,7 +36,7 @@ locs['locality_counts'] = pd.to_numeric(locs['locality_counts'])
 raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d = transform_data(locs, Scaler)
 
 
-# Kernel Density Estimate on 1-d data
+# Kernel Density Estimate (gaussian, tophat, epanechnikov on 1-d data)
 
 N = len(locs)
 
@@ -68,10 +68,48 @@ for color, kernel in zip(colors, kernels):
 ax.text(4, 0.44, "N={0} points".format(N))
 
 ax.legend(loc="upper right")
-ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "+k")
+ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "|k")
 
 
 plt.savefig(f"figures/kde/classification_output.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
+## Kernel Density Estimate (epanechnikov) on 1-d data with different bandwidths
+
+N = len(locs)
+
+X = scaled_locality_1d
+x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
+
+X_plot = np.linspace(x_min - 1, x_max + 1, 1000)[:, np.newaxis]
+
+true_dens = 0.3 * norm(0, 1).pdf(X_plot[:, 0]) + 0.7 * norm(10, 1).pdf(X_plot[:, 0])
+
+fig, ax = plt.subplots()
+ax.fill(X_plot[:, 0], true_dens, fc="black", alpha=0.2, label="input distribution")
+colors = ['black', 'blue', 'darkorange', 'brown']
+
+for index, bandwidth in enumerate(np.arange(0.2, 0.6, 0.1)):
+    kde = KernelDensity(kernel='epanechnikov', bandwidth=bandwidth).fit(X)
+    log_dens = kde.score_samples(X_plot)
+    ax.plot(
+        X_plot[:, 0],
+        np.exp(log_dens),
+        color=colors[index],
+        lw=0.8,
+        linestyle="--",
+        label="KDE with bandwidth = {}".format(round(bandwidth, 2)),
+    )
+
+ax.text(4, 0.44, "N={0} points".format(N))
+
+ax.legend(loc="upper right")
+ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "|k")
+
+
+plt.savefig(f"figures/kde/classification_output_n_bandwidth.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
@@ -84,7 +122,7 @@ x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
 
 X_plot = np.linspace(x_min - 1, x_max + 1, 1000)[:, np.newaxis]
 
-kde = KernelDensity(kernel="epanechnikov", bandwidth=0.35)
+kde = KernelDensity(kernel="epanechnikov", bandwidth=0.3)
 kde.fit(X)
 
 log_dens = kde.score_samples(X_plot)
