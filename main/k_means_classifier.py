@@ -4,8 +4,6 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
 
-from scipy.stats import norm
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -286,8 +284,8 @@ locs_classes.sort_values('locality_counts', inplace=True)
 
 # Transitional minerals
 # 5-16
-# 17-75
+# 17-70
 
 # Ubiquitous minerals
-# 76-590
-# > 590
+# 71-550
+# > 550

@@ -79,17 +79,19 @@ plt.close()
 ## Get decision boundaries
 
 X = scaled_locality_1d
+X.sort()
 x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
 
 X_plot = np.linspace(x_min - 1, x_max + 1, 1000)[:, np.newaxis]
 
-kde = KernelDensity(kernel="epanechnikov", bandwidth=0.4)
+kde = KernelDensity(kernel="epanechnikov", bandwidth=0.35)
 kde.fit(X)
 
 log_dens = kde.score_samples(X_plot)
 
 mi, ma = argrelextrema(log_dens, np.less)[0], argrelextrema(log_dens, np.greater)[0]
 clusters = np.concatenate([scaled_locality_1d[mi], scaled_locality_1d[ma]])
+clusters = np.unique(clusters)
 
 
 # Obtain labels for each point in test array. Use last trained model.
@@ -100,8 +102,4 @@ descaled = np.exp(log_descaled)
 descaled = np.sort(descaled, axis=0)
 descaled = descaled.ravel()
 
-locs_classes = pd.DataFrame({ 'locality_counts': descaled, 'predicted': xx_predicated })
-
-locs_classes = locs_classes.groupby('predicted')[['locality_counts']].agg(lambda x: str(np.floor(x.min())) + '-' + str(np.floor(x.max())))
-
-locs_classes.sort_values('locality_counts', inplace=True)
+print(descaled)
