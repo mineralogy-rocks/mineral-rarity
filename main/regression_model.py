@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import train_test_split
 
 from functions.helpers import parse_mindat, parse_rruff, get_discovery_rate_all, get_discovery_rate_endemic, get_endemic_proportion
@@ -31,12 +32,19 @@ endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_ra
 # Create a model of before 2012, use without outliers and calculate True endemicity
 # Here X (attribute) is discovery year and Y (label) is number of endemic minerals discovered during that year
 
-X = np.array(discovery_rate_endemic.loc[discovery_rate_endemic.index < 2012].index).reshape(-1,1)
-y = discovery_rate_endemic.loc[discovery_rate_endemic.index < 2012, 'count'].to_numpy(dtype=int).reshape(-1,1)
+X= endemic_proportion.loc[endemic_proportion.index < 2012][['count_all']]
+X['discovery_year'] = X.index
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+# transform to polynomial, eg non-linearity
+X_poly = PolynomialFeatures(2)
+X_poly = X_poly.fit_transform(X)
 
-model = Ridge(alpha=0.001, fit_intercept=True)
+
+y = endemic_proportion.loc[endemic_proportion.index < 2012, 'count_endemic']
+
+X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.2, random_state=40)
+
+model = LinearRegression()
 
 model.fit(X_train, y_train)
 
