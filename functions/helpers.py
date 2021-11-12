@@ -73,6 +73,41 @@ def _standardize_features(data, skewed_features=[]):
     return data
 
 
+def parse_rruff(data):
+    """ Clean and transform RRUFF data  """
+
+    data.loc[data['Year First Published'] == 0, 'Year First Published'] = np.nan
+    data.rename(columns={'Mineral Name': 'mineral_name', 'Year First Published': 'discovery_year'}, inplace=True)
+
+    rruff_data = data[['mineral_name', 'discovery_year']]
+    rruff_data.set_index('mineral_name', inplace=True)
+
+    return rruff_data
+
+
+def parse_mindat(data):
+    """ Clean and transform mindat data  """
+
+    data.replace('\\N', np.nan, inplace=True)
+
+    data.rename(columns={'loccount': 'locality_counts'}, inplace=True)
+
+    ## Don't have any clue why mindat keeps `0` in imayear column and mixes dtypes in others (?!)
+
+    data['imayear'].replace('0', np.nan, inplace=True)
+
+    locs_md = data[['name', 'imayear', 'yeardiscovery', 'yearrruff', 'locality_counts']]
+    locs_md.loc[:, 'imayear'] = pd.to_numeric(locs_md['imayear'])
+    locs_md.loc[:, 'yearrruff'] = pd.to_numeric(locs_md['yearrruff'])
+
+    locs_md.loc[:, 'locality_counts'] = pd.to_numeric(locs_md['locality_counts'])
+    locs_md.loc[~locs_md['yeardiscovery'].str.match(r'[0-9]{4}', na=False), 'yeardiscovery'] = np.nan
+    locs_md.loc[:, 'yeardiscovery'] = pd.to_numeric(locs_md['yeardiscovery'])
+
+    locs_md.set_index('name', inplace=True)
+
+    return locs_md
+
 def get_discovery_rate_all(data, min_year=1500):
     """ Get all minerals counts grouped by the discovery year (all from MR)"""
 
@@ -101,3 +136,13 @@ def get_discovery_rate_endemic(data):
     discovery_rate_endemic.rename(columns={'locality_counts': 'count'}, inplace=True)
 
     return discovery_rate_endemic
+
+
+def get_endemic_proportion(discovery_rate_endemic, discovery_rate_all):
+    """ Calculate the proportion of endemic minerals from all """
+
+    endemic_all_prop = discovery_rate_endemic.join(discovery_rate_all, how='inner', lsuffix='_endemic', rsuffix='_all')
+
+    endemic_all_prop['proportion'] = endemic_all_prop['count_endemic'] / endemic_all_prop['count_all'] * 100
+
+    return endemic_all_prop

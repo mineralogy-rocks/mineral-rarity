@@ -6,7 +6,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import get_discovery_rate_all, get_discovery_rate_endemic
+from functions.helpers import get_discovery_rate_all, get_discovery_rate_endemic, get_endemic_proportion, parse_rruff, \
+    parse_mindat
 
 # -*- coding: utf-8 -*-
 """
@@ -29,32 +30,12 @@ rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
 
 # Clean and transform RRUFF data
 
-rruff_data.loc[rruff_data['Year First Published'] == 0, 'Year First Published'] = np.nan
-rruff_data.rename(columns={ 'Mineral Name': 'mineral_name', 'Year First Published': 'discovery_year' }, inplace=True)
-
-rruff_data = rruff_data[['mineral_name', 'discovery_year']]
-rruff_data.set_index('mineral_name', inplace=True)
+rruff_data = parse_rruff(rruff_data)
 
 
 # Clean and transform md data
 
-locs_md.replace('\\N', np.nan, inplace=True)
-
-locs_md.rename(columns={ 'loccount': 'locality_counts' }, inplace=True)
-
-## Don't have any clue why mindat keeps `0` in imayear column and mixes dtypes in others (?!)
-
-locs_md['imayear'].replace('0', np.nan, inplace=True)
-
-locs_md = locs_md[['name', 'imayear', 'yeardiscovery', 'yearrruff', 'locality_counts']]
-locs_md['imayear'] = pd.to_numeric(locs_md['imayear'])
-locs_md['yearrruff'] = pd.to_numeric(locs_md['yearrruff'])
-
-locs_md['locality_counts'] = pd.to_numeric(locs_md['locality_counts'])
-locs_md.loc[~locs_md['yeardiscovery'].str.match(r'[0-9]{4}', na=False), 'yeardiscovery'] = np.nan
-locs_md['yeardiscovery'] = pd.to_numeric(locs_md['yeardiscovery'])
-
-locs_md.set_index('name', inplace=True)
+locs_md = parse_mindat(locs_md)
 
 
 # Clean and transform MR data
@@ -68,16 +49,14 @@ locs_mr = locs_mr.join(discovery_year, how='inner')[['locality_counts', 'discove
 locs_mr['locality_counts'] = pd.to_numeric(locs_mr['locality_counts'])
 
 discovery_year.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
+locs_mr.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
 
 
 ## Get all minerals counts grouped by the discovery year (all from MR)
 
 discovery_rate_all = get_discovery_rate_all(discovery_year)
 discovery_rate_endemic = get_discovery_rate_endemic(locs_mr)
-
-endemic_all_prop = discovery_rate_endemic.join(discovery_rate_all, how='inner', lsuffix='_endemic', rsuffix='_all')
-
-endemic_all_prop['proportion'] = endemic_all_prop['count_endemic'] / endemic_all_prop['count_all'] * 100
+endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
 
 
 
@@ -107,13 +86,7 @@ mindat_rruff.loc[mindat_rruff['discovery_year'] == 2021]
 
 discovery_rate_all = get_discovery_rate_all(mindat_rruff)
 discovery_rate_endemic = get_discovery_rate_endemic(mindat_rruff)
-
-
-## Get a propostion of endemic / all minerals during discovery year
-
-endemic_all_prop = discovery_rate_endemic.join(discovery_rate_all, how='inner', lsuffix='_endemic', rsuffix='_all')
-
-endemic_all_prop['proportion'] = endemic_all_prop['count_endemic'] / endemic_all_prop['count_all'] * 100
+endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
 
 
 # bar chart of discovery rate of all minerals
