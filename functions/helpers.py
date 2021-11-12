@@ -71,3 +71,33 @@ def _standardize_features(data, skewed_features=[]):
         data = np.log(data)
 
     return data
+
+
+def get_discovery_rate_all(data, min_year=1500):
+    """ Get all minerals counts grouped by the discovery year (all from MR)"""
+
+    discovery_rate_all = data.loc[
+        (data['discovery_year'].notna()) & (data['discovery_year'] > min_year)]
+
+    discovery_rate_all = discovery_rate_all.sort_values('discovery_year', ascending=True)[['discovery_year']]
+
+    discovery_rate_all = discovery_rate_all.groupby('discovery_year').agg({'discovery_year': 'count'})
+
+    discovery_rate_all.rename(columns={'discovery_year': 'count'}, inplace=True)
+
+    return discovery_rate_all
+
+
+def get_discovery_rate_endemic(data):
+    """ Get endemic minerals counts grouped by the discovery year """
+
+    discovery_rate_endemic = data.loc[
+        (data['locality_counts'] == 1) & (data['discovery_year'].notna())]
+
+    discovery_rate_endemic = discovery_rate_endemic.sort_values('discovery_year', ascending=True)
+
+    discovery_rate_endemic = discovery_rate_endemic.groupby('discovery_year').agg({'locality_counts': 'sum'})
+
+    discovery_rate_endemic.rename(columns={'locality_counts': 'count'}, inplace=True)
+
+    return discovery_rate_endemic
