@@ -75,7 +75,7 @@ model.score(X_, y)
 predicted_after_1900 = model.predict(X_after_1900_)
 
 # Plot the model
-plt.scatter(y_all[:, 0], y_all[:, 1], color='green', marker='o', s=20,
+plt.scatter(y_all[(y_all[:, 0] > 1900)][:, 0], y_all[(y_all[:, 0] > 1900)][:, 1], color='green', marker='o', s=20,
             edgecolors='black', linewidths=0.1)
 plt.plot(X_after_1900, predicted_after_1900, color="blue", linewidth=1)
 
