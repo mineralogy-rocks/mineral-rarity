@@ -33,33 +33,51 @@ discovery_rate_all = get_discovery_rate_all(mindat_rruff)
 discovery_rate_endemic = get_discovery_rate_endemic(mindat_rruff)
 endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
 
+# Plot endemic proportion (endemic count / all count * 100%)
+
+plt.scatter(endemic_proportion.index, endemic_proportion['proportion'], color='#5FD6D1', marker='o', s=20,
+            edgecolors='black', linewidths=0.1)
+
+plt.xlabel('Discovery year')
+plt.ylabel('Number of endemic minerals / Number of all minerals')
+plt.title('The rate of endemic minerals discovery')
+
+plt.savefig(f"figures/endemic_minerals/proportion.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
 # Create a model of before 2012, use without outliers and calculate True endemicity
 # Here X (attribute) is discovery year and Y (label) is number of endemic minerals discovered during that year
 
-discovery_rate_for_lr = discovery_rate_all.join(discovery_rate_endemic, how='inner', lsuffix='_all', rsuffix='_endemic')
+transformer = PolynomialFeatures(degree=2, include_bias=False)
 
-transformer = PolynomialFeatures(degree=2, include_bias=True)
+X_all = endemic_proportion[['count_all']]
+X_all.reset_index(inplace=True)
+X_all = np.array(X_all[['discovery_year']], dtype=int)
+X = X_all[(X_all > 1900) & (X_all < 2012)].reshape(-1,1)
+X_after_1900 = X_all[(X_all > 1900)].reshape(-1,1)
 
-X = discovery_rate_for_lr.loc[discovery_rate_for_lr.index < 2012][['count_all']]
-X['discovery_year'] = X.index
-X = np.array(X[['discovery_year', 'count_all']])
 X_ = transformer.fit_transform(X)
+X_after_1900_ = transformer.fit_transform(X_after_1900)
 
-X_ = X
-y = discovery_rate_endemic.loc[discovery_rate_endemic.index < 2012, 'count'].to_numpy(dtype=int)
+y_all = endemic_proportion.reset_index().to_numpy(dtype=int)
+y = y_all[(y_all[:, 0] > 1900) & (y_all[:, 0] < 2012)][:, 1]
 
 X_train, X_test, y_train, y_test = train_test_split(X_, y, test_size=0.2, random_state=0, shuffle=False)
 
-model = LinearRegression(fit_intercept=False)
+model = LinearRegression(fit_intercept=True)
 
-model.fit(X_train, y_train)
+model.fit(X_, y)
 
-model.predict(X_train)
+model.score(X_, y)
 
+predicted_after_1900 = model.predict(X_after_1900_)
 
 # Plot the model
-plt.scatter(discovery_rate_for_lr.loc[discovery_rate_for_lr.index < 2012].index, y, color="black")
-plt.plot(X_train[:, 0], model.predict(X_train), color="blue", linewidth=1)
+plt.scatter(y_all[:, 0], y_all[:, 1], color='green', marker='o', s=20,
+            edgecolors='black', linewidths=0.1)
+plt.plot(X_after_1900, predicted_after_1900, color="blue", linewidth=1)
 
 plt.savefig(f"figures/endemic_minerals/linear_regression.jpeg", dpi=300, format='jpeg')
 
