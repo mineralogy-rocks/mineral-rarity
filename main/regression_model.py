@@ -52,7 +52,7 @@ plt.close()
 # Create different linear models for a subsets of years
 # Here X (attribute) is discovery year and Y (label) is number of endemic minerals discovered during that year
 
-transformer = PolynomialFeatures(degree=3, include_bias=False)
+transformer = PolynomialFeatures(degree=2, include_bias=False)
 post_1900 = endemic_proportion.loc[(endemic_proportion['discovery_year'] > 1900)]
 
 X = {
@@ -72,11 +72,16 @@ y = {
 plt.scatter(post_1900[['discovery_year']], post_1900[['count_endemic']], color='green', marker='o', s=20,
             edgecolors='black', linewidths=0.1)
 
-training_years = [2000, 2012, 2021]
+training_sets = [
+    { 'year': 1990, 'color': 'green', 'linestyle': 'dotted' },
+    { 'year': 2000, 'color': 'magenta', 'linestyle': 'dotted' },
+    { 'year': 2011, 'color': 'blue', 'linestyle': 'dashed' },
+    { 'year': 2021, 'color': 'olive', 'linestyle': 'dashed' }
+]
 
-for training_year in training_years:
+for training_set in training_sets:
 
-    pre_year = post_1900.loc[post_1900['discovery_year'] <= training_year]
+    pre_year = post_1900.loc[post_1900['discovery_year'] <= training_set['year']]
 
     X['pre_year'] = pre_year[['discovery_year']].to_numpy(dtype=int).reshape(-1, 1)
 
@@ -87,11 +92,11 @@ for training_year in training_years:
 
     model = LinearRegression(fit_intercept=True)
     model.fit(X_['pre_year'], y['pre_year'])
-    print(f'R2 = {model.score(X_["1900_2021"], y["1900_2021"])}')
+    print(f'R2 = {model.score(X_["pre_year"], y["pre_year"])}')
     predicted = model.predict(X_['1900_2021'])
 
 
-    plt.plot(post_1900[['discovery_year']], predicted, color="blue", linewidth=1)
+    plt.plot(post_1900[['discovery_year']], predicted, color=training_set['color'], linestyle=training_set['linestyle'], linewidth=1)
 
 plt.savefig(f"figures/endemic_minerals/linear_regression.jpeg", dpi=300, format='jpeg')
 
