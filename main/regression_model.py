@@ -91,7 +91,7 @@ for training_set in training_sets:
     X_['pre_year'] = transformer.fit_transform(X['pre_year'])
     y['pre_year'] = pre_year[['count_endemic']].to_numpy(dtype=int)
 
-    X_train, X_test, y_train, y_test = train_test_split(X_['pre_year'], y['pre_year'], test_size = 0.1, random_state = 52, # 51
+    X_train, X_test, y_train, y_test = train_test_split(X_['pre_year'], y['pre_year'], test_size = 0.1, random_state = 53, # 51 and 52
                                                         shuffle=True)
 
     model = LinearRegression(fit_intercept=True)
