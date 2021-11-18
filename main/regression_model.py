@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, explained_variance_score
 from sklearn.model_selection import train_test_split
 
 import matplotlib
@@ -54,7 +54,7 @@ plt.close()
 # Create different linear models for a subsets of years
 # Here X (attribute) is discovery year and Y (label) is number of endemic minerals discovered during that year
 
-transformer = PolynomialFeatures(degree=2, include_bias=False)
+transformer = PolynomialFeatures(degree=3, include_bias=False)
 post_1900 = endemic_proportion.loc[(endemic_proportion['discovery_year'] > 1900)]
 
 X = {
@@ -91,9 +91,9 @@ for training_set in training_sets:
     X_['pre_year'] = transformer.fit_transform(X['pre_year'])
     y['pre_year'] = pre_year[['count_endemic']].to_numpy(dtype=int)
 
-    X_train, X_test, y_train, y_test = train_test_split(X_['pre_year'], y['pre_year'], test_size = 0.2, random_state = 42,
+    X_train, X_test, y_train, y_test = train_test_split(X_['pre_year'], y['pre_year'], test_size = 0.1, random_state = 52, # 51
                                                         shuffle=True)
-    
+
     model = LinearRegression(fit_intercept=True)
     model.fit(X_train, y_train)
     # model.fit(X_['pre_year'], y['pre_year'])
@@ -104,9 +104,17 @@ for training_set in training_sets:
     # Calculate RMSE and r2
     RMSE = np.sqrt(mean_squared_error(y_test, y_pred))
     R2 = r2_score(y_test, y_pred)
+    exp_variance = explained_variance_score(y_test, y_pred)
+
+    print(f'1900-{training_set["year"]} range \n'
+          f'R2 = {R2};\n'
+          f'RMSE = {RMSE}; \n'
+          f'Coefficients: {model.coef_}; \n'
+          f'Explained variance: {exp_variance} \n'
+          f'----------------------------------')
 
     plt.plot(post_1900[['discovery_year']], y_pred_all, color=training_set['color'], linestyle=training_set['linestyle'], linewidth=1)
 
-plt.savefig(f"figures/endemic_minerals/linear_regression_2_polynomial.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/endemic_minerals/linear_regression_3_polynomial.jpeg", dpi=300, format='jpeg')
 
 plt.close()
