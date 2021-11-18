@@ -3,6 +3,8 @@ import numpy as np
 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 
 import matplotlib
 matplotlib.use('Agg')
@@ -87,17 +89,24 @@ for training_set in training_sets:
 
     # polynomial transformed
     X_['pre_year'] = transformer.fit_transform(X['pre_year'])
-
     y['pre_year'] = pre_year[['count_endemic']].to_numpy(dtype=int)
 
+    X_train, X_test, y_train, y_test = train_test_split(X_['pre_year'], y['pre_year'], test_size = 0.2, random_state = 42,
+                                                        shuffle=True)
+    
     model = LinearRegression(fit_intercept=True)
-    model.fit(X_['pre_year'], y['pre_year'])
-    print(f'R2 = {model.score(X_["pre_year"], y["pre_year"])}')
-    predicted = model.predict(X_['1900_2021'])
+    model.fit(X_train, y_train)
+    # model.fit(X_['pre_year'], y['pre_year'])
 
+    y_pred_all = model.predict(X_['1900_2021'])
+    y_pred = model.predict(X_test)
 
-    plt.plot(post_1900[['discovery_year']], predicted, color=training_set['color'], linestyle=training_set['linestyle'], linewidth=1)
+    # Calculate RMSE and r2
+    RMSE = np.sqrt(mean_squared_error(y_test, y_pred))
+    R2 = r2_score(y_test, y_pred)
 
-plt.savefig(f"figures/endemic_minerals/linear_regression.jpeg", dpi=300, format='jpeg')
+    plt.plot(post_1900[['discovery_year']], y_pred_all, color=training_set['color'], linestyle=training_set['linestyle'], linewidth=1)
+
+plt.savefig(f"figures/endemic_minerals/linear_regression_2_polynomial.jpeg", dpi=300, format='jpeg')
 
 plt.close()
