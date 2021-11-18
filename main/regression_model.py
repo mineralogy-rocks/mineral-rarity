@@ -109,12 +109,44 @@ for training_set in training_sets:
     print(f'1900-{training_set["year"]} range \n'
           f'R2 = {R2};\n'
           f'RMSE = {RMSE}; \n'
+          f'Intercept: {model.intercept_} \n'
           f'Coefficients: {model.coef_}; \n'
           f'Explained variance: {exp_variance} \n'
           f'----------------------------------')
 
     plt.plot(post_1900[['discovery_year']], y_pred_all, color=training_set['color'], linestyle=training_set['linestyle'], linewidth=1)
 
+plt.xlabel('Discovery year')
+plt.ylabel('Number of observed endemic minerals')
+plt.title('Discovery rate of endemic minerals')
+
 plt.savefig(f"figures/endemic_minerals/linear_regression_3_polynomial.jpeg", dpi=300, format='jpeg')
 
 plt.close()
+
+
+# Predict number of "true" endemic species for 2001-2021 using the model trained on 1900-2000 span
+# with a 2-degree polynomial transform
+
+transformer = PolynomialFeatures(degree=2, include_bias=False)
+pre_year = post_1900.loc[post_1900['discovery_year'] <= 2011]
+
+X_ = {
+    '1900_2021': transformer.fit_transform(X['1900_2021']),
+}
+
+X['pre_year'] = pre_year[['discovery_year']].to_numpy(dtype=int).reshape(-1, 1)
+
+# polynomial transformed
+X_['pre_year'] = transformer.fit_transform(X['pre_year'])
+y['pre_year'] = pre_year[['count_endemic']].to_numpy(dtype=int)
+
+X_train, X_test, y_train, y_test = train_test_split(X_['pre_year'], y['pre_year'], test_size = 0.1, random_state = 53,
+                                                    shuffle=True)
+
+model = LinearRegression(fit_intercept=True)
+model.fit(X_train, y_train)
+
+y_pred_all = model.predict(X_['1900_2021'])
+pred_output = np.append(X['1900_2021'], y_pred_all, axis=1)
+pred_output = pd.DataFrame(pred_output, columns=['discovery_year', 'count_endemic'])
