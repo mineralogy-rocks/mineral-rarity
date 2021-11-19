@@ -128,8 +128,18 @@ plt.close()
 # Predict number of "true" endemic species for 2001-2021 using the model trained on 1900-2000 span
 # with a 2-degree polynomial transform
 
-transformer = PolynomialFeatures(degree=2, include_bias=False)
+post_1900 = endemic_proportion.loc[(endemic_proportion['discovery_year'] > 1900)]
 pre_year = post_1900.loc[post_1900['discovery_year'] <= 2011]
+
+X = {
+    '1900_2021': post_1900[['discovery_year']].to_numpy(dtype=int).reshape(-1, 1),
+}
+
+y = {
+    '1900_2021': post_1900[['count_endemic']].to_numpy(dtype=int)
+}
+
+transformer = PolynomialFeatures(degree=2, include_bias=False)
 
 X_ = {
     '1900_2021': transformer.fit_transform(X['1900_2021']),
@@ -148,5 +158,10 @@ model = LinearRegression(fit_intercept=True)
 model.fit(X_train, y_train)
 
 y_pred_all = model.predict(X_['1900_2021'])
-pred_output = np.append(X['1900_2021'], y_pred_all, axis=1)
-pred_output = pd.DataFrame(pred_output, columns=['discovery_year', 'count_endemic'])
+pred_output = np.hstack((X['1900_2021'], y_pred_all, post_1900['count_endemic'].to_numpy(dtype=int).reshape(-1,1)))
+loss = pred_output[:,2, None] - pred_output[:,1, None]
+pred_output = np.hstack((pred_output, loss))
+true_endemic_sum = pred_output[pred_output[:, 0] >= 2000, 2].sum()
+loss_sum = pred_output[pred_output[:, 0] >= 2000, 3].sum()
+
+pred_output = pd.DataFrame(pred_output, columns=['discovery_year', 'true_endemic', 'observed_endemic', 'diff'])

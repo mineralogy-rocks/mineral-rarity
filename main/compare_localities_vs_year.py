@@ -23,23 +23,14 @@ locs_mr = GsheetApi.locs.copy()
 discovery_year = GsheetApi.names.copy()
 status = GsheetApi.status_data.copy()
 
-
 locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
 rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
 
-
-# Clean and transform RRUFF data
-
 rruff_data = parse_rruff(rruff_data)
-
-
-# Clean and transform md data
-
 locs_md = parse_mindat(locs_md)
 
 
 # Clean and transform MR data
-
 locs_mr.set_index('mineral_name', inplace=True)
 discovery_year.set_index('Mineral_Name', inplace=True)
 discovery_year['discovery_year_min'] = pd.to_numeric(discovery_year['discovery_year_min'])
@@ -57,21 +48,6 @@ locs_mr.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
 discovery_rate_all = get_discovery_rate_all(discovery_year)
 discovery_rate_endemic = get_discovery_rate_endemic(locs_mr)
 endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
-
-
-
-# Check MR discovery year with RRUFF first published year
-
-status.set_index('Mineral_Name', inplace=True)
-status = status[['all_indexes']]
-
-status_mr = status.join(discovery_year, how='inner')
-status_mr_ima = status_mr.loc[status_mr.all_indexes.str.contains('0.0')]
-
-rruff_mr_all = rruff_data.join(status_mr_ima, how='inner')
-
-diff = rruff_mr_all.loc[rruff_mr_all['discovery_year'] != rruff_mr_all['discovery_year_min']] # 1922 diff
-
 
 # Use mindat localities and RRUFF discovery year
 
