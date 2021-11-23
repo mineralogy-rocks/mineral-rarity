@@ -32,6 +32,7 @@ locs_md = parse_mindat(locs_md)
 
 # Clean and transform MR data
 locs_mr.set_index('mineral_name', inplace=True)
+status.set_index('Mineral_Name', inplace=True)
 discovery_year.set_index('Mineral_Name', inplace=True)
 discovery_year['discovery_year_min'] = pd.to_numeric(discovery_year['discovery_year_min'])
 
@@ -41,7 +42,6 @@ locs_mr['locality_counts'] = pd.to_numeric(locs_mr['locality_counts'])
 
 discovery_year.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
 locs_mr.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
-
 
 ## Get all minerals counts grouped by the discovery year (all from MR)
 
@@ -55,8 +55,10 @@ mindat_rruff = locs_md.join(rruff_data, how='outer')
 
 mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 
-mindat_rruff.loc[mindat_rruff['discovery_year'] == 2021]
+# get proportions of rare and endemic minerals
+mindat_rruff.loc[(mindat_rruff['locality_counts'] == 1)]
 
+len(mindat_rruff.loc[(mindat_rruff['locality_counts'] <= 18) & (mindat_rruff['locality_counts'] > 5)]) / 5762 * 100
 
 ## Get discovery rates (localities from mindat, discovery year from RRUFF)
 

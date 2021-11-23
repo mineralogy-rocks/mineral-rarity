@@ -31,6 +31,7 @@ locs = GsheetApi.locs.copy()
 locs['locality_counts'] = pd.to_numeric(locs['locality_counts'])
 
 
+
 # Pre-process data and create a list of arrays of [x, y], where x is the locality count and y is mineral count
 
 raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d = transform_data(locs, Scaler)
