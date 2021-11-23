@@ -57,8 +57,12 @@ mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 
 # get proportions of rare and endemic minerals
 mindat_rruff.loc[(mindat_rruff['locality_counts'] == 1)]
+mindat_rruff.loc[(mindat_rruff['locality_counts'] >= 2) & (mindat_rruff['locality_counts'] <= 4)]
 
-len(mindat_rruff.loc[(mindat_rruff['locality_counts'] <= 18) & (mindat_rruff['locality_counts'] > 5)]) / 5762 * 100
+mindat_rruff.loc[mindat_rruff['locality_counts'].isna(), 'locality_counts'] = 1.0
+len(mindat_rruff.loc[(mindat_rruff['locality_counts'] > 18)]) / len(mindat_rruff) * 100
+len(mindat_rruff.loc[(mindat_rruff['locality_counts'] <= 18) & (mindat_rruff['locality_counts'] >= 5)]) / len(mindat_rruff) * 100
+len(mindat_rruff.loc[(mindat_rruff['locality_counts'] <= 4) ]) / len(mindat_rruff) * 100
 
 ## Get discovery rates (localities from mindat, discovery year from RRUFF)
 
@@ -66,14 +70,17 @@ discovery_rate_all = get_discovery_rate_all(mindat_rruff)
 discovery_rate_endemic = get_discovery_rate_endemic(mindat_rruff)
 endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
 
+discovery_rate_all['count_cumulative'] = discovery_rate_all.cumsum()
+discovery_rate_all = discovery_rate_all.loc[discovery_rate_all.index >= 1800]
 
-# bar chart of discovery rate of all minerals
+# bar chart of discovery rate of all minerals between 1800 and 2021
 
 y_pos = np.arange(len(discovery_rate_all.index))
 x_ticks = np.arange(len(discovery_rate_all.index), step=15)
 x_labels = discovery_rate_all.index[x_ticks]
 
 plt.bar(y_pos, discovery_rate_all['count'])
+plt.plot(discovery_rate_all.index, discovery_rate_all[['count_cumulative']], color='red', linestyle='dotted', linewidth=1)
 
 plt.xticks(x_ticks, np.array(x_labels, dtype=int), rotation=45)
 
@@ -82,6 +89,19 @@ plt.ylabel('Minerals count')
 plt.title('Discovery rate of minerals')
 
 plt.savefig(f"figures/all_minerals/discovery_rate.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
+# cumulative curve of discovery rate for all minerals
+
+plt.plot(discovery_rate_all.index, discovery_rate_all[['count_cumulative']], color='red', linestyle='dotted', linewidth=1)
+
+plt.xlabel('Discovery Year')
+plt.ylabel('Minerals count')
+plt.title('Discovery rate of minerals')
+
+plt.savefig(f"figures/all_minerals/discovery_rate_cumulative.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
@@ -117,3 +137,5 @@ plt.title('Discovery rate of minerals')
 plt.savefig(f"figures/endemic_minerals/discovery_rate_bar.jpeg", dpi=300, format='jpeg')
 
 plt.close()
+
+
