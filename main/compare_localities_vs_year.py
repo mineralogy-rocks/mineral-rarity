@@ -56,7 +56,9 @@ mindat_rruff = locs_md.join(rruff_data, how='outer')
 mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 
 # get proportions of rare and endemic minerals
-mindat_rruff.loc[(mindat_rruff['locality_counts'] == 1)]
+endemic = mindat_rruff.loc[(mindat_rruff['locality_counts'] == 1)]
+endemic.sort_values(by='discovery_year', inplace=True)
+
 mindat_rruff.loc[(mindat_rruff['locality_counts'] >= 2) & (mindat_rruff['locality_counts'] <= 4)]
 
 mindat_rruff.loc[mindat_rruff['locality_counts'].isna(), 'locality_counts'] = 1.0
@@ -73,6 +75,7 @@ endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_ra
 discovery_rate_all['count_cumulative'] = discovery_rate_all.cumsum()
 discovery_rate_all = discovery_rate_all.loc[discovery_rate_all.index >= 1800]
 
+
 # bar chart of discovery rate of all minerals between 1800 and 2021
 
 y_pos = np.arange(len(discovery_rate_all.index))
@@ -80,7 +83,6 @@ x_ticks = np.arange(len(discovery_rate_all.index), step=15)
 x_labels = discovery_rate_all.index[x_ticks]
 
 plt.bar(y_pos, discovery_rate_all['count'])
-plt.plot(discovery_rate_all.index, discovery_rate_all[['count_cumulative']], color='red', linestyle='dotted', linewidth=1)
 
 plt.xticks(x_ticks, np.array(x_labels, dtype=int), rotation=45)
 
