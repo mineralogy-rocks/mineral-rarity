@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat
@@ -204,6 +205,7 @@ abundance['t/all'] = abundance['abundance_t'] / abundance['abundance_all'] * 100
 abundance['u/all'] = abundance['abundance_u'] / abundance['abundance_all'] * 100
 abundance['tu + u/all'] = (abundance['abundance_tu'] + abundance['abundance_u']) / abundance['abundance_all'] * 100
 
+abundance['Elements'] = abundance.index
 
 # Geochemical classifications
 lile = abundance.loc[['Pb', 'Sr', 'Ba', 'K', 'Rb', 'Cs']]
@@ -225,3 +227,40 @@ Xc.setdiag(0) # reset diagonal
 print(Xc.todense()) # to print co-occurence matrix in dense format
 
 test1 = pd.DataFrame(data = Xc.toarray(), columns = test.columns)
+
+
+
+
+sns.set_theme(style="whitegrid")
+
+# Load the dataset
+crashes = sns.load_dataset("car_crashes")
+
+# Make the PairGrid
+g = sns.PairGrid(abundance,
+                 x_vars=['re + rr/all', 're + rr + tr/all', 'tu + u/all'], y_vars=["Elements"],
+                 height=10, aspect=.25)
+
+# Draw a dot plot using the stripplot function
+g.map(sns.stripplot, size=10, orient="h", jitter=False,
+      palette="flare_r", linewidth=1, edgecolor="w")
+
+# Use the same x axis limits on all columns and add better labels
+g.set(xlim=(0, 100), xlabel="Crashes", ylabel="")
+
+# Use semantically meaningful titles for the columns
+titles = ['re + rr/all', 're + rr + tr/all', 'tu + u/all']
+
+for ax, title in zip(g.axes.flat, titles):
+
+    # Set a different title for each axes
+    ax.set(title=title)
+
+    # Make the grid horizontal instead of vertical
+    ax.xaxis.grid(False)
+    ax.yaxis.grid(True)
+
+sns.despine(left=True, bottom=True)
+
+g.savefig(f"figures/chemistry/dot_plot.jpeg", dpi=300, format='jpeg')
+
