@@ -27,6 +27,8 @@ rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
 rruff_data = parse_rruff(rruff_data)
 locs_md = parse_mindat(locs_md)
 
+elements = pd.read_csv('data/elements_data.csv', sep=',')
+elements.set_index('element', inplace=True)
 
 # Clean and transform MR data
 status.set_index('Mineral_Name', inplace=True)
@@ -190,12 +192,15 @@ mr_el_spread = pd.DataFrame(mr_el.groupby('Elements').size().sort_values(), colu
 
 # concat all and RE
 abundance = mr_el_spread.join(re_el_spread, how='outer', lsuffix='_all', rsuffix='_re')
+abundance = abundance.join(re_true_el_spread.rename(columns={'abundance': 'abundance_re_true'}), how='outer')
 abundance = abundance.join(rr_el_spread.rename(columns={'abundance': 'abundance_rr'}), how='outer')
 abundance = abundance.join(tr_el_spread.rename(columns={'abundance': 'abundance_tr'}), how='outer')
 abundance = abundance.join(tu_el_spread.rename(columns={'abundance': 'abundance_tu'}), how='outer')
 abundance = abundance.join(t_el_spread.rename(columns={'abundance': 'abundance_t'}), how='outer')
 abundance = abundance.join(u_el_spread.rename(columns={'abundance': 'abundance_u'}), how='outer')
+abundance.replace(np.nan, 0, inplace=True)
 abundance['re/all'] = abundance['abundance_re'] / abundance['abundance_all'] * 100
+abundance['re_true/all'] = abundance['abundance_re_true'] / abundance['abundance_all'] * 100
 abundance['rr/all'] = abundance['abundance_rr'] / abundance['abundance_all'] * 100
 abundance['re + rr/all'] = (abundance['abundance_re'] + abundance['abundance_rr']) / abundance['abundance_all'] * 100
 abundance['re + rr + tr/all'] = (abundance['abundance_re'] + abundance['abundance_rr'] + abundance['abundance_tr']) / abundance['abundance_all'] * 100
@@ -204,6 +209,9 @@ abundance['tu/all'] = abundance['abundance_tu'] / abundance['abundance_all'] * 1
 abundance['t/all'] = abundance['abundance_t'] / abundance['abundance_all'] * 100
 abundance['u/all'] = abundance['abundance_u'] / abundance['abundance_all'] * 100
 abundance['tu + u/all'] = (abundance['abundance_tu'] + abundance['abundance_u']) / abundance['abundance_all'] * 100
+
+# join elements data
+abundance = abundance.join(elements[['crust_crc_handbook', 'ion_radius']], how='left')
 
 abundance['Elements'] = abundance.index
 
@@ -230,15 +238,14 @@ test1 = pd.DataFrame(data = Xc.toarray(), columns = test.columns)
 
 
 
+# Dot plot of elements, arranged by abundance in crust grouped by rarity groups
 
 sns.set_theme(style="whitegrid")
 
-# Load the dataset
-crashes = sns.load_dataset("car_crashes")
 
 # Make the PairGrid
-g = sns.PairGrid(abundance,
-                 x_vars=['re + rr/all', 're + rr + tr/all', 'tu + u/all'], y_vars=["Elements"],
+g = sns.PairGrid(abundance.sort_values('crust_crc_handbook', ascending=False),
+                 x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 'tu + u/all'], y_vars=["Elements"],
                  height=10, aspect=.25)
 
 # Draw a dot plot using the stripplot function
@@ -246,10 +253,10 @@ g.map(sns.stripplot, size=10, orient="h", jitter=False,
       palette="flare_r", linewidth=1, edgecolor="w")
 
 # Use the same x axis limits on all columns and add better labels
-g.set(xlim=(0, 100), xlabel="Crashes", ylabel="")
+g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
 
 # Use semantically meaningful titles for the columns
-titles = ['re + rr/all', 're + rr + tr/all', 'tu + u/all']
+titles = ['tRE/All', 'RE + RR', 'RE + RR + TR', 'TU + U']
 
 for ax, title in zip(g.axes.flat, titles):
 
