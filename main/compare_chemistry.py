@@ -211,7 +211,7 @@ abundance['u/all'] = abundance['abundance_u'] / abundance['abundance_all'] * 100
 abundance['tu + u/all'] = (abundance['abundance_tu'] + abundance['abundance_u']) / abundance['abundance_all'] * 100
 
 # join elements data
-abundance = abundance.join(elements[['crust_crc_handbook', 'ion_radius']], how='left')
+abundance = abundance.join(elements[['crust_crc_handbook', 'ion_radius', 'atomic_number', 'goldschmidt_classification']], how='left')
 
 abundance['Elements'] = abundance.index
 
@@ -244,13 +244,13 @@ sns.set_theme(style="whitegrid")
 
 
 # Make the PairGrid
-g = sns.PairGrid(abundance.sort_values('crust_crc_handbook', ascending=False),
+g = sns.pairplot(abundance.sort_values('crust_crc_handbook', ascending=False),
                  x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 'tu + u/all'], y_vars=["Elements"],
-                 height=10, aspect=.25)
+                 height=10, aspect=.25, hue="goldschmidt_classification", palette="flare_r", dropna=True)
 
 # Draw a dot plot using the stripplot function
 g.map(sns.stripplot, size=10, orient="h", jitter=False,
-      palette="flare_r", linewidth=1, edgecolor="w")
+      linewidth=1, edgecolor="w")
 
 # Use the same x axis limits on all columns and add better labels
 g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
