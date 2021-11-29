@@ -30,6 +30,12 @@ locs_md = parse_mindat(locs_md)
 elements = pd.read_csv('data/elements_data.csv', sep=',')
 elements.set_index('element', inplace=True)
 
+# Petrological classifications
+
+elements.loc[elements.index.isin(['Pb', 'Sr', 'Ba', 'K', 'Rb', 'Cs']), 'petrology'] = 'LILE'
+elements.loc[elements.index.isin(['P', 'Nb', 'Ta', 'W', 'Zr', 'Hf', 'Th', 'U', 'Ti', 'Y', 'Lu', 'La', 'Eu']), 'petrology'] = 'HFSE'
+elements.loc[elements.index.isin(['Si', 'Al', 'Cr', 'Fe', 'Mg', 'Cu', 'Zn', 'Ni', 'Co', 'Ca']), 'petrology'] = 'MRFE'
+
 # Clean and transform MR data
 status.set_index('Mineral_Name', inplace=True)
 ns.set_index('Mineral_Name', inplace=True)
@@ -122,6 +128,8 @@ plt.savefig(f"figures/rare_minerals/pie_chart_nickel_strunz.jpeg", dpi=300, form
 
 plt.close()
 
+r = mr_data.loc[(mr_data['locality_counts'] <= 4)]
+r.sort_values(by='discovery_year', inplace=True)
 
 ##### T MINERALS  #####
 
@@ -160,6 +168,12 @@ rr_el.rename(columns={0 : 'Elements'}, inplace=True)
 rr_el = rr_el.explode('Elements')
 rr_el_spread = pd.DataFrame(rr_el.groupby('Elements').size().sort_values(), columns=['abundance'])
 
+# Get a share by elements for all R
+r_el = pd.DataFrame(r.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
+r_el.rename(columns={0 : 'Elements'}, inplace=True)
+r_el = r_el.explode('Elements')
+r_el_spread = pd.DataFrame(r_el.groupby('Elements').size().sort_values(), columns=['abundance'])
+
 # Get a share by elements for TR
 tr_el = pd.DataFrame(tr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
 tr_el.rename(columns={0 : 'Elements'}, inplace=True)
@@ -194,6 +208,7 @@ mr_el_spread = pd.DataFrame(mr_el.groupby('Elements').size().sort_values(), colu
 abundance = mr_el_spread.join(re_el_spread, how='outer', lsuffix='_all', rsuffix='_re')
 abundance = abundance.join(re_true_el_spread.rename(columns={'abundance': 'abundance_re_true'}), how='outer')
 abundance = abundance.join(rr_el_spread.rename(columns={'abundance': 'abundance_rr'}), how='outer')
+abundance = abundance.join(r_el_spread.rename(columns={'abundance': 'abundance_r'}), how='outer')
 abundance = abundance.join(tr_el_spread.rename(columns={'abundance': 'abundance_tr'}), how='outer')
 abundance = abundance.join(tu_el_spread.rename(columns={'abundance': 'abundance_tu'}), how='outer')
 abundance = abundance.join(t_el_spread.rename(columns={'abundance': 'abundance_t'}), how='outer')
@@ -210,15 +225,14 @@ abundance['t/all'] = abundance['abundance_t'] / abundance['abundance_all'] * 100
 abundance['u/all'] = abundance['abundance_u'] / abundance['abundance_all'] * 100
 abundance['tu + u/all'] = (abundance['abundance_tu'] + abundance['abundance_u']) / abundance['abundance_all'] * 100
 
+
 # join elements data
-abundance = abundance.join(elements[['crust_crc_handbook', 'ion_radius', 'atomic_number', 'goldschmidt_classification']], how='left')
+abundance = abundance.join(elements, how='left')
+abundance['ion_radius'].replace(',','.', regex=True, inplace=True)
+abundance['electronegativity'].replace(',','.', regex=True, inplace=True)
+abundance['crust_crc_handbook'].replace(',','.', regex=True, inplace=True)
 
 abundance['Elements'] = abundance.index
-
-# Geochemical classifications
-lile = abundance.loc[['Pb', 'Sr', 'Ba', 'K', 'Rb', 'Cs']]
-hfse = abundance.loc[['P', 'Nb', 'Ta', 'W', 'Zr', 'Hf', 'Th', 'U', 'Ti', 'Y', 'La']]
-
 
 # calculate elements co-occurrence matrix
 elements = mr_el['Elements'].drop_duplicates().sort_values().reset_index(drop=True)
@@ -244,19 +258,20 @@ sns.set_theme(style="whitegrid")
 
 
 # Make the PairGrid
-g = sns.pairplot(abundance.sort_values('crust_crc_handbook', ascending=False),
-                 x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 'tu + u/all'], y_vars=["Elements"],
-                 height=10, aspect=.25, hue="goldschmidt_classification", palette="flare_r", dropna=True)
+g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=False),
+                 x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 'tu + u/all', 'u/all'], y_vars=["Elements"],
+                 hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
 
-# Draw a dot plot using the stripplot function
-g.map(sns.stripplot, size=10, orient="h", jitter=False,
-      linewidth=1, edgecolor="w")
+
+g.map(sns.scatterplot, size=abundance['ion_radius'].to_numpy(dtype=float), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
+
+g.add_legend(adjust_subtitles=True)
 
 # Use the same x axis limits on all columns and add better labels
 g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
 
 # Use semantically meaningful titles for the columns
-titles = ['tRE/All', 'RE + RR', 'RE + RR + TR', 'TU + U']
+titles = ['tRE/All', 'RE + RR', 'RE + RR + TR', 'TU + U', 'U']
 
 for ax, title in zip(g.axes.flat, titles):
 
@@ -269,5 +284,4 @@ for ax, title in zip(g.axes.flat, titles):
 
 sns.despine(left=True, bottom=True)
 
-g.savefig(f"figures/chemistry/dot_plot.jpeg", dpi=300, format='jpeg')
-
+g.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
