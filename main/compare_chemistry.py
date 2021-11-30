@@ -259,7 +259,7 @@ sns.set_theme(style="whitegrid")
 
 # Make the PairGrid
 g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=False),
-                 x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 'tu + u/all', 'u/all'], y_vars=["Elements"],
+                 x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 't/all', 'u/all', 'tu + u/all'], y_vars=["Elements"],
                  hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
 
 
@@ -271,7 +271,7 @@ g.add_legend(adjust_subtitles=True)
 g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
 
 # Use semantically meaningful titles for the columns
-titles = ['tRE/All', 'RE + RR', 'RE + RR + TR', 'TU + U', 'U']
+titles = ['tRE/All', 'RE + RR', 'RE + RR + TR', 'T', 'U', 'TU + U']
 
 for ax, title in zip(g.axes.flat, titles):
 
@@ -285,3 +285,11 @@ for ax, title in zip(g.axes.flat, titles):
 sns.despine(left=True, bottom=True)
 
 g.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
+
+
+
+# Chalcophile and Siderophile elements, rare in Earth's Crust
+chalc_sidero_el = ['Sn', 'As', 'Ge', 'Mo', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', 'Se', 'Pd', 'Bi', 'Pt', 'Au', 'Os', 'Te',
+                   'Rh', 'Ru', 'Ir', 'Re']
+
+abundance.loc[abundance.index.isin(chalc_sidero_el)]['re + rr + tr/all'].median()
