@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.feature_extraction.text import CountVectorizer
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix
@@ -215,6 +214,7 @@ abundance = abundance.join(tu_el_spread.rename(columns={'abundance': 'abundance_
 abundance = abundance.join(t_el_spread.rename(columns={'abundance': 'abundance_t'}), how='outer')
 abundance = abundance.join(u_el_spread.rename(columns={'abundance': 'abundance_u'}), how='outer')
 abundance.replace(np.nan, 0, inplace=True)
+abundance['all'] = abundance['abundance_all'] / len(mr_data) * 100
 abundance['re/all'] = abundance['abundance_re'] / abundance['abundance_all'] * 100
 abundance['re_true/all'] = abundance['abundance_re_true'] / abundance['abundance_all'] * 100
 abundance['rr/all'] = abundance['abundance_rr'] / abundance['abundance_all'] * 100
@@ -274,6 +274,24 @@ chalc_sidero_el = ['Sn', 'As', 'Ge', 'Mo', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', '
 
 abundance.loc[abundance.index.isin(chalc_sidero_el)]['re + rr + tr/all'].median()
 
+
+# Binary plot number of minerals with particular element vs crustal abundance of element
+abundance_log = abundance.copy()[['abundance_all', 'crust_crc_handbook', 'goldschmidt_classification']]
+abundance_log['crust_crc_handbook'] = pd.to_numeric(abundance_log['crust_crc_handbook'])
+abundance_log['crust_crc_handbook'] = np.log(abundance_log['crust_crc_handbook'])
+abundance_log['abundance_all'] = np.log(abundance_log['abundance_all'])
+
+sns.set_theme(style="whitegrid")
+
+sns.scatterplot(x="abundance_all",
+                y="crust_crc_handbook",
+                hue="goldschmidt_classification",
+                sizes=(1, 8),
+                linewidth=0,
+                data=abundance_log)
+
+plt.savefig(f"figures/chemistry/element_abundance_vs_mineral_number.jpeg", dpi=300, format='jpeg')
+plt.close()
 
 # calculate elements co-occurrence matrixes
 # All
