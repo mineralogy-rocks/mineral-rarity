@@ -5,9 +5,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.feature_extraction.text import CountVectorizer
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import parse_rruff, parse_mindat
+from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix
 
 # -*- coding: utf-8 -*-
 """
@@ -234,28 +235,8 @@ abundance['crust_crc_handbook'].replace(',','.', regex=True, inplace=True)
 
 abundance['Elements'] = abundance.index
 
-# calculate elements co-occurrence matrix
-elements = mr_el['Elements'].drop_duplicates().sort_values().reset_index(drop=True)
-test = mr_el.copy()
-test['number'] = 1
-test['mineral_name'] = test.index
-test = test.pivot(index='mineral_name', columns='Elements', values='number')
-test = test.replace(0, np.nan)
-
-import scipy.sparse as sp
-X = sp.csr_matrix(test.values) # convert dataframe to sparse matrix
-Xc = X.T * X # multiply sparse matrix #
-Xc.setdiag(0) # reset diagonal
-print(Xc.todense()) # to print co-occurence matrix in dense format
-
-test1 = pd.DataFrame(data = Xc.toarray(), columns = test.columns)
-
-
-
 # Dot plot of elements, arranged by abundance in crust grouped by rarity groups
-
 sns.set_theme(style="whitegrid")
-
 
 # Make the PairGrid
 g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=False),
@@ -293,3 +274,44 @@ chalc_sidero_el = ['Sn', 'As', 'Ge', 'Mo', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', '
                    'Rh', 'Ru', 'Ir', 'Re']
 
 abundance.loc[abundance.index.isin(chalc_sidero_el)]['re + rr + tr/all'].median()
+
+
+# calculate elements co-occurrence matrixes
+# All
+mr_el_vector = pd.DataFrame(mr_data.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1))
+mr_el_vector[1] = pd.DataFrame(mr_data.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+mr_el_vector = mr_el_vector.explode(1)
+
+# tRE
+re_true_el_vector = pd.DataFrame(re_true.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1))
+re_true_el_vector[1] = pd.DataFrame(re_true.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+re_true_el_vector = re_true_el_vector.explode(1)
+
+# RE
+re_el_vector = pd.DataFrame(re.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1))
+re_el_vector[1] = pd.DataFrame(re.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+re_el_vector = re_el_vector.explode(1)
+
+# RR
+rr_el_vector = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1))
+rr_el_vector[1] = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+rr_el_vector = rr_el_vector.explode(1)
+
+# T
+t_el_vector = pd.DataFrame(t.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1))
+t_el_vector[1] = pd.DataFrame(t.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+t_el_vector = t_el_vector.explode(1)
+
+# U
+u_el_vector = pd.DataFrame(u.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1))
+u_el_vector[1] = pd.DataFrame(u.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+u_el_vector = u_el_vector.explode(1)
+
+cooccurrence_all = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1])
+cooccurrence_t_re = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1])
+cooccurrence_re = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1])
+cooccurrence_rr = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1])
+cooccurrence_t = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1])
+cooccurrence_u = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1])
+
+# add heat maps
