@@ -268,7 +268,6 @@ sns.despine(left=True, bottom=True)
 g.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
 
 
-
 # Chalcophile and Siderophile elements, rare in Earth's Crust
 chalc_sidero_el = ['Sn', 'As', 'Ge', 'Mo', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', 'Se', 'Pd', 'Bi', 'Pt', 'Au', 'Os', 'Te',
                    'Rh', 'Ru', 'Ir', 'Re']
@@ -314,4 +313,20 @@ cooccurrence_rr = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1]
 cooccurrence_t = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1])
 cooccurrence_u = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1])
 
+cooccurrence_all_norm = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1], norm='index')
+cooccurrence_t_re_norm = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1], norm='index')
+cooccurrence_re_norm = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1], norm='index')
+cooccurrence_rr_norm = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1], norm='index')
+cooccurrence_t_norm = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1], norm='index')
+cooccurrence_u_norm = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1], norm='index')
+
 # add heat maps
+sns.set_theme(style="whitegrid")
+temp = sns.heatmap(cooccurrence_t_re_norm, linewidths=0.1)
+temp.set_xticks(range(len(cooccurrence_t_re_norm))) # <--- set the ticks first
+temp.set_xticklabels(cooccurrence_t_re_norm.columns)
+temp.tick_params(labelsize=2)
+temp.set_xlabel(None)
+temp.set_ylabel(None)
+plt.savefig(f"figures/chemistry/cooccurrence_tre.jpeg", dpi=300, format='jpeg')
+plt.close()

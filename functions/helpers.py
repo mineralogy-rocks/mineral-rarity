@@ -147,7 +147,7 @@ def get_endemic_proportion(discovery_rate_endemic, discovery_rate_all):
 
     return endemic_all_prop
 
-def calculate_cooccurrence_matrix(data0, data1):
-    cooccurrence = pd.crosstab(data0, data1)
+def calculate_cooccurrence_matrix(data0, data1, norm=False):
+    cooccurrence = pd.crosstab(data0, data1, normalize=norm)
     np.fill_diagonal(cooccurrence.values, 0)
     return cooccurrence
