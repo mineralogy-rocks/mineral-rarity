@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix
+from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
+    get_mineral_clarks
 
 # -*- coding: utf-8 -*-
 """
 @author: Liubomyr Gavryliv
-Code for analysing the chemistry of endemic minerals
+Code for analysing the chemistry, crystal systems of minerals in the light of their rarity
 """
 
 GsheetApi = GsheetApi()
@@ -47,13 +48,9 @@ mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 mr_data = ns.join(mindat_rruff, how='inner')
 mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
 
+r, re_true, re, rr, t, tr, tu, u = split_by_rarity_groups(mr_data)
+
 ##### RE MINERALS  #####
-
-re = mr_data.loc[(mr_data['locality_counts'] == 1)]
-re_true = mr_data.loc[~((mr_data['discovery_year'] > 2000) & (mr_data['locality_counts'] == 1)) & (mr_data['locality_counts'] == 1)]
-
-re.sort_values(by='discovery_year', inplace=True)
-re_true.sort_values(by='discovery_year', inplace=True)
 
 re.loc[re['discovery_year'] < 1950]
 re_true.loc[re['discovery_year'] < 1950]
@@ -99,8 +96,6 @@ plt.close()
 
 ##### RR MINERALS  #####
 
-rr = mr_data.loc[(mr_data['locality_counts'] <= 4) & (mr_data['locality_counts'] >=2)]
-rr.sort_values(by='discovery_year', inplace=True)
 rr.loc[rr['discovery_year'] < 1950]
 
 # during SD period
@@ -128,81 +123,21 @@ plt.savefig(f"figures/rare_minerals/pie_chart_nickel_strunz.jpeg", dpi=300, form
 
 plt.close()
 
-r = mr_data.loc[(mr_data['locality_counts'] <= 4)]
-r.sort_values(by='discovery_year', inplace=True)
-
-##### T MINERALS  #####
-
-t = mr_data.loc[(mr_data['locality_counts'] > 4) & (mr_data['locality_counts'] <= 70)]
-t.sort_values(by='discovery_year', inplace=True)
-
-tr = mr_data.loc[(mr_data['locality_counts'] > 4) & (mr_data['locality_counts'] <= 16)]
-tr.sort_values(by='discovery_year', inplace=True)
-
-tu = mr_data.loc[(mr_data['locality_counts'] > 16) & (mr_data['locality_counts'] <= 70)]
-tu.sort_values(by='discovery_year', inplace=True)
-
-##### T MINERALS  #####
-
-u = mr_data.loc[(mr_data['locality_counts'] > 70)]
-u.sort_values(by='discovery_year', inplace=True)
-
 
 ##### Chemistry analytics #####
 
-# Get a share by elements for RE
-re_el = pd.DataFrame(re.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-re_el.rename(columns={0 : 'Elements'}, inplace=True)
-re_el = re_el.explode('Elements')
-re_el_spread = pd.DataFrame(re_el.groupby('Elements').size().sort_values(), columns=['abundance'])
+re_true_el, re_true_el_spread = get_mineral_clarks(re_true)
+re_el, re_el_spread = get_mineral_clarks(re)
+rr_el, rr_el_spread = get_mineral_clarks(rr)
+r_el, r_el_spread = get_mineral_clarks(r)
 
-# Get a share by elements for tRE
-re_true_el = pd.DataFrame(re_true.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-re_true_el.rename(columns={0 : 'Elements'}, inplace=True)
-re_true_el = re_true_el.explode('Elements')
-re_true_el_spread = pd.DataFrame(re_true_el.groupby('Elements').size().sort_values(), columns=['abundance'])
+tr_el, tr_el_spread = get_mineral_clarks(tr)
+tu_el, tu_el_spread = get_mineral_clarks(tu)
+t_el, t_el_spread = get_mineral_clarks(t)
 
-# Get a share by elements for RR
-rr_el = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-rr_el.rename(columns={0 : 'Elements'}, inplace=True)
-rr_el = rr_el.explode('Elements')
-rr_el_spread = pd.DataFrame(rr_el.groupby('Elements').size().sort_values(), columns=['abundance'])
+u_el, u_el_spread = get_mineral_clarks(u)
 
-# Get a share by elements for all R
-r_el = pd.DataFrame(r.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-r_el.rename(columns={0 : 'Elements'}, inplace=True)
-r_el = r_el.explode('Elements')
-r_el_spread = pd.DataFrame(r_el.groupby('Elements').size().sort_values(), columns=['abundance'])
-
-# Get a share by elements for TR
-tr_el = pd.DataFrame(tr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-tr_el.rename(columns={0 : 'Elements'}, inplace=True)
-tr_el = tr_el.explode('Elements')
-tr_el_spread = pd.DataFrame(tr_el.groupby('Elements').size().sort_values(), columns=['abundance'])
-
-# Get a share by elements for TU
-tu_el = pd.DataFrame(tu.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-tu_el.rename(columns={0 : 'Elements'}, inplace=True)
-tu_el = tu_el.explode('Elements')
-tu_el_spread = pd.DataFrame(tu_el.groupby('Elements').size().sort_values(), columns=['abundance'])
-
-# Get a share by elements for T
-t_el = pd.DataFrame(t.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-t_el.rename(columns={0 : 'Elements'}, inplace=True)
-t_el = t_el.explode('Elements')
-t_el_spread = pd.DataFrame(t_el.groupby('Elements').size().sort_values(), columns=['abundance'])
-
-# Get a share by elements for U
-u_el = pd.DataFrame(u.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-u_el.rename(columns={0 : 'Elements'}, inplace=True)
-u_el = u_el.explode('Elements')
-u_el_spread = pd.DataFrame(u_el.groupby('Elements').size().sort_values(), columns=['abundance'])
-
-# Get a share by elements for All
-mr_el = pd.DataFrame(mr_data.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
-mr_el.rename(columns={0 : 'Elements'}, inplace=True)
-mr_el = mr_el.explode('Elements')
-mr_el_spread = pd.DataFrame(mr_el.groupby('Elements').size().sort_values(), columns=['abundance'])
+mr_el,mr_el_spread = get_mineral_clarks(mr_data)
 
 # concat all and RE
 abundance = mr_el_spread.join(re_el_spread, how='outer', lsuffix='_all', rsuffix='_re')

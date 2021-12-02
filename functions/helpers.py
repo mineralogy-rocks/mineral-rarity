@@ -151,3 +151,38 @@ def calculate_cooccurrence_matrix(data0, data1, norm=False):
     cooccurrence = pd.crosstab(data0, data1, normalize=norm)
     np.fill_diagonal(cooccurrence.values, 0)
     return cooccurrence
+
+
+def split_by_rarity_groups(data):
+    r = data.loc[(data['locality_counts'] <= 4)]
+    re_true = data.loc[
+        ~((data['discovery_year'] > 2000) & (data['locality_counts'] == 1)) & (data['locality_counts'] == 1)]
+    re = data.loc[(data['locality_counts'] == 1)]
+    rr = data.loc[(data['locality_counts'] <= 4) & (data['locality_counts'] >= 2)]
+
+    t = data.loc[(data['locality_counts'] > 4) & (data['locality_counts'] <= 70)]
+    tr = data.loc[(data['locality_counts'] > 4) & (data['locality_counts'] <= 16)]
+    tu = data.loc[(data['locality_counts'] > 16) & (data['locality_counts'] <= 70)]
+
+    u = data.loc[(data['locality_counts'] > 70)]
+
+    r.sort_values(by='discovery_year', inplace=True)
+    re_true.sort_values(by='discovery_year', inplace=True)
+    re.sort_values(by='discovery_year', inplace=True)
+    rr.sort_values(by='discovery_year', inplace=True)
+    t.sort_values(by='discovery_year', inplace=True)
+    tr.sort_values(by='discovery_year', inplace=True)
+    tu.sort_values(by='discovery_year', inplace=True)
+    u.sort_values(by='discovery_year', inplace=True)
+
+    return r, re_true, re, rr, t, tr, tu, u
+
+
+def get_mineral_clarks(data):
+    data_el = pd.DataFrame(
+        data.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))
+    data_el.rename(columns={0: 'Elements'}, inplace=True)
+    data_el = data_el.explode('Elements')
+    data_el_spread = pd.DataFrame(data_el.groupby('Elements').size().sort_values(), columns=['abundance'])
+
+    return data_el, data_el_spread
