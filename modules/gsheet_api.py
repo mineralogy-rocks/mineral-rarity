@@ -18,6 +18,7 @@ class GsheetApi():
             {'ws_name': 'Masterlist2', 'ss_name': 'Status data', 'local_name': 'status_data'},
             {'ws_name': 'Masterlist2', 'ss_name': 'Nickel-Strunz', 'local_name': 'nickel_strunz'},
             {'ws_name': 'Masterlist2', 'ss_name': 'Names data', 'local_name': 'names'},
+            {'ws_name': 'Masterlist2', 'ss_name': 'Crystallography', 'local_name': 'crystal'},
             {'ws_name': 'Locality_count_rruff', 'ss_name': 'loc_2019', 'local_name': 'locs'},
         ]
         self.status_data = None

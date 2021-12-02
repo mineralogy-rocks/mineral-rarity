@@ -18,8 +18,8 @@ Code for analysing the chemistry of endemic minerals
 GsheetApi = GsheetApi()
 GsheetApi.run_main()
 
-status = GsheetApi.status_data.copy()
 ns = GsheetApi.nickel_strunz.copy()
+crystal = GsheetApi.crystal.copy()
 
 locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
 rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
@@ -37,15 +37,15 @@ elements.loc[elements.index.isin(['P', 'Nb', 'Ta', 'W', 'Zr', 'Hf', 'Th', 'U', '
 elements.loc[elements.index.isin(['Si', 'Al', 'Cr', 'Fe', 'Mg', 'Cu', 'Zn', 'Ni', 'Co', 'Ca']), 'petrology'] = 'MRFE'
 
 # Clean and transform MR data
-status.set_index('Mineral_Name', inplace=True)
 ns.set_index('Mineral_Name', inplace=True)
-
+crystal.set_index('Mineral_Name', inplace=True)
 
 mindat_rruff = locs_md.join(rruff_data, how='outer')
 mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 
 # create final subset for the analysis
 mr_data = ns.join(mindat_rruff, how='inner')
+mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
 
 ##### RE MINERALS  #####
 
