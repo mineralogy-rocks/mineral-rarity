@@ -13,14 +13,13 @@ from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_
 # -*- coding: utf-8 -*-
 """
 @author: Liubomyr Gavryliv
-Code for analysing the chemistry, crystal systems of minerals in the light of their rarity
+Code for analysing the chemistry of minerals in the light of their rarity
 """
 
 GsheetApi = GsheetApi()
 GsheetApi.run_main()
 
 ns = GsheetApi.nickel_strunz.copy()
-crystal = GsheetApi.crystal.copy()
 
 locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
 rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
@@ -39,14 +38,12 @@ elements.loc[elements.index.isin(['Si', 'Al', 'Cr', 'Fe', 'Mg', 'Cu', 'Zn', 'Ni'
 
 # Clean and transform MR data
 ns.set_index('Mineral_Name', inplace=True)
-crystal.set_index('Mineral_Name', inplace=True)
 
 mindat_rruff = locs_md.join(rruff_data, how='outer')
 mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 
 # create final subset for the analysis
 mr_data = ns.join(mindat_rruff, how='inner')
-mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
 
 r, re_true, re, rr, t, tr, tu, u = split_by_rarity_groups(mr_data)
 
@@ -211,22 +208,34 @@ abundance.loc[abundance.index.isin(chalc_sidero_el)]['re + rr + tr/all'].median(
 
 
 # Binary plot number of minerals with particular element vs crustal abundance of element
+
 abundance_log = abundance.copy()[['abundance_all', 'crust_crc_handbook', 'goldschmidt_classification']]
 abundance_log['crust_crc_handbook'] = pd.to_numeric(abundance_log['crust_crc_handbook'])
 abundance_log['crust_crc_handbook'] = np.log(abundance_log['crust_crc_handbook'])
 abundance_log['abundance_all'] = np.log(abundance_log['abundance_all'])
+abundance_log['Elements'] = abundance_log.index
 
 sns.set_theme(style="whitegrid")
 
-sns.scatterplot(x="abundance_all",
+sc = sns.scatterplot(x="abundance_all",
                 y="crust_crc_handbook",
                 hue="goldschmidt_classification",
-                sizes=(1, 8),
+                sizes=(1, 2),
                 linewidth=0,
                 data=abundance_log)
 
-plt.savefig(f"figures/chemistry/element_abundance_vs_mineral_number.jpeg", dpi=300, format='jpeg')
+for line in range(0, abundance_log.shape[0]):
+    sc.text(abundance_log['abundance_all'][line] + 0.01, abundance_log['crust_crc_handbook'][line],
+            abundance_log['Elements'][line], horizontalalignment='right',
+            color='black', weight='light', fontsize='xx-small')
+
+plt.xlabel("log(Number of minerals)")
+plt.ylabel("log(Crustal abundance)")
+plt.title(None)
+
+plt.savefig(f"figures/chemistry/element_abundance_vs_mineral_clark.jpeg", dpi=300, format='jpeg')
 plt.close()
+
 
 # calculate elements co-occurrence matrixes
 # All
