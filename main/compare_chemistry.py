@@ -263,6 +263,12 @@ rr_el_vector[1] = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').gr
 rr_el_vector = rr_el_vector.explode(1)
 rr_el_vector = rr_el_vector.loc[rr_el_vector[0] != rr_el_vector[1]]
 
+# RR
+r_el_vector = r.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
+r_el_vector[1] = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+r_el_vector = r_el_vector.explode(1)
+r_el_vector = r_el_vector.loc[r_el_vector[0] != r_el_vector[1]]
+
 # T
 t_el_vector = t.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 t_el_vector[1] = pd.DataFrame(t.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
@@ -279,15 +285,9 @@ cooccurrence_all = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1
 cooccurrence_re_true = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1])
 cooccurrence_re = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1])
 cooccurrence_rr = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1])
+cooccurrence_r = calculate_cooccurrence_matrix(r_el_vector[0], r_el_vector[1])
 cooccurrence_t = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1])
 cooccurrence_u = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1])
-
-cooccurrence_all.replace(0, np.nan, inplace=True)
-cooccurrence_re_true.replace(0, np.nan, inplace=True)
-cooccurrence_re.replace(0, np.nan, inplace=True)
-cooccurrence_rr.replace(0, np.nan, inplace=True)
-cooccurrence_t.replace(0, np.nan, inplace=True)
-cooccurrence_u.replace(0, np.nan, inplace=True)
 
 cooccurrence_all_norm = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1], norm='index')
 cooccurrence_re_true_norm = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1], norm='index')
@@ -301,6 +301,9 @@ cooccurrence_u_norm = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[
 cooccurrence_size = cooccurrence_re_true.sum()
 cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
+cooccurrence_size = cooccurrence_re.sum()
+cooccurrence_size.sort_values(0, inplace=True, ascending=False)
+
 # add heat maps
 sns.set_theme(style="whitegrid")
 temp = sns.heatmap(cooccurrence_re_true_norm, linewidths=0.1)
@@ -311,3 +314,11 @@ temp.set_xlabel(None)
 temp.set_ylabel(None)
 plt.savefig(f"figures/chemistry/cooccurrence_tre.jpeg", dpi=300, format='jpeg')
 plt.close()
+
+# export to csv
+cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep='\t')
+cooccurrence_all.to_csv('supplementary_data/cooc_all.csv', sep='\t')
+cooccurrence_re.to_csv('supplementary_data/cooc_re.csv', sep='\t')
+cooccurrence_rr.to_csv('supplementary_data/cooc_rr.csv', sep='\t')
+cooccurrence_t.to_csv('supplementary_data/cooc_t.csv', sep='\t')
+cooccurrence_u.to_csv('supplementary_data/cooc_u.csv', sep='\t')
