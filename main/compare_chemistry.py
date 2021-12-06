@@ -242,48 +242,55 @@ plt.close()
 mr_el_vector = mr_data.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 mr_el_vector[1] = pd.DataFrame(mr_data.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 mr_el_vector = mr_el_vector.explode(1)
+mr_el_vector = mr_el_vector.loc[mr_el_vector[0] != mr_el_vector[1]]
 
 # tRE
 re_true_el_vector = re_true.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 re_true_el_vector[1] = pd.DataFrame(re_true.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 re_true_el_vector = re_true_el_vector.explode(1)
+re_true_el_vector = re_true_el_vector.loc[re_true_el_vector[0] != re_true_el_vector[1]]
+
 
 # RE
 re_el_vector = re.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 re_el_vector[1] = pd.DataFrame(re.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 re_el_vector = re_el_vector.explode(1)
+re_el_vector = re_el_vector.loc[re_el_vector[0] != re_el_vector[1]]
 
 # RR
 rr_el_vector = rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 rr_el_vector[1] = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 rr_el_vector = rr_el_vector.explode(1)
+rr_el_vector = rr_el_vector.loc[rr_el_vector[0] != rr_el_vector[1]]
 
 # T
 t_el_vector = t.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 t_el_vector[1] = pd.DataFrame(t.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 t_el_vector = t_el_vector.explode(1)
+t_el_vector = t_el_vector.loc[t_el_vector[0] != t_el_vector[1]]
 
 # U
 u_el_vector = u.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 u_el_vector[1] = pd.DataFrame(u.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 u_el_vector = u_el_vector.explode(1)
+u_el_vector = u_el_vector.loc[u_el_vector[0] != u_el_vector[1]]
 
 cooccurrence_all = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1])
-cooccurrence_t_re = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1])
+cooccurrence_re_true = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1])
 cooccurrence_re = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1])
 cooccurrence_rr = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1])
 cooccurrence_t = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1])
 cooccurrence_u = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1])
 
 cooccurrence_all.replace(0, np.nan, inplace=True)
-cooccurrence_t_re.replace(0, np.nan, inplace=True)
+cooccurrence_re_true.replace(0, np.nan, inplace=True)
 cooccurrence_re.replace(0, np.nan, inplace=True)
 cooccurrence_rr.replace(0, np.nan, inplace=True)
 cooccurrence_t.replace(0, np.nan, inplace=True)
 cooccurrence_u.replace(0, np.nan, inplace=True)
 
 cooccurrence_all_norm = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1], norm='index')
-cooccurrence_t_re_norm = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1], norm='index')
+cooccurrence_re_true_norm = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1], norm='index')
 cooccurrence_re_norm = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1], norm='index')
 cooccurrence_rr_norm = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1], norm='index')
 cooccurrence_t_norm = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1], norm='index')
@@ -291,14 +298,14 @@ cooccurrence_u_norm = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[
 
 
 # Group by each element and calculate sum of occurrences for each
-cooccurrence_size = cooccurrence_t_re.sum()
+cooccurrence_size = cooccurrence_re_true.sum()
 cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
 # add heat maps
 sns.set_theme(style="whitegrid")
-temp = sns.heatmap(cooccurrence_t_re_norm, linewidths=0.1)
-temp.set_xticks(range(len(cooccurrence_t_re_norm))) # <--- set the ticks first
-temp.set_xticklabels(cooccurrence_t_re_norm.columns)
+temp = sns.heatmap(cooccurrence_re_true_norm, linewidths=0.1)
+temp.set_xticks(range(len(cooccurrence_re_true_norm))) # <--- set the ticks first
+temp.set_xticklabels(cooccurrence_re_true_norm.columns)
 temp.tick_params(labelsize=2)
 temp.set_xlabel(None)
 temp.set_ylabel(None)
