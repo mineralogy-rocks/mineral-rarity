@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
+import networkx as nx
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
@@ -207,7 +208,7 @@ chalc_sidero_el = ['Sn', 'As', 'Ge', 'Mo', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', '
 abundance.loc[abundance.index.isin(chalc_sidero_el)]['re + rr + tr/all'].median()
 
 
-# Binary plot number of minerals with particular element vs crustal abundance of element
+# Binary plot: mineral abundance vs crustal abundance of element
 
 abundance_log = abundance.copy()[['abundance_all', 'crust_crc_handbook', 'goldschmidt_classification']]
 abundance_log['crust_crc_handbook'] = pd.to_numeric(abundance_log['crust_crc_handbook'])
@@ -314,6 +315,15 @@ temp.set_xlabel(None)
 temp.set_ylabel(None)
 plt.savefig(f"figures/chemistry/cooccurrence_tre.jpeg", dpi=300, format='jpeg')
 plt.close()
+
+# create a network graph
+
+G = nx.from_pandas_edgelist(u_el_vector.drop_duplicates(ignore_index=True).join(elements, on=0, how='left')[[0, 1, 'crust_crc_handbook',]].sort_values('crust_crc_handbook'), source=0, target=1)
+
+nx.draw_circular(G, with_labels=True, node_size=100, width=0.1, font_size=5)
+plt.savefig(f"figures/chemistry/u_elements_circular_network.jpeg", dpi=300, format='jpeg')
+plt.close()
+
 
 # export to csv
 cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep='\t')
