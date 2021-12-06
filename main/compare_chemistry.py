@@ -316,6 +316,10 @@ temp.set_ylabel(None)
 plt.savefig(f"figures/chemistry/cooccurrence_tre.jpeg", dpi=300, format='jpeg')
 plt.close()
 
+# calculate unique cooccurrences
+
+re_true_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
+
 # create a network graph
 
 G = nx.from_pandas_edgelist(u_el_vector.drop_duplicates(ignore_index=True).join(elements, on=0, how='left')[[0, 1, 'crust_crc_handbook',]].sort_values('crust_crc_handbook'), source=0, target=1)
