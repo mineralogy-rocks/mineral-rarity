@@ -266,7 +266,7 @@ rr_el_vector = rr_el_vector.loc[rr_el_vector[0] != rr_el_vector[1]]
 
 # RR
 r_el_vector = r.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
-r_el_vector[1] = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+r_el_vector[1] = pd.DataFrame(r.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 r_el_vector = r_el_vector.explode(1)
 r_el_vector = r_el_vector.loc[r_el_vector[0] != r_el_vector[1]]
 
@@ -305,29 +305,43 @@ cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 cooccurrence_size = cooccurrence_re.sum()
 cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
-# add heat maps
-sns.set_theme(style="whitegrid")
-temp = sns.heatmap(cooccurrence_re_true_norm, linewidths=0.1)
-temp.set_xticks(range(len(cooccurrence_re_true_norm))) # <--- set the ticks first
-temp.set_xticklabels(cooccurrence_re_true_norm.columns)
-temp.tick_params(labelsize=2)
-temp.set_xlabel(None)
-temp.set_ylabel(None)
-plt.savefig(f"figures/chemistry/cooccurrence_tre.jpeg", dpi=300, format='jpeg')
-plt.close()
-
 # calculate unique cooccurrences
 
 re_true_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
 
-# create a network graph
+# create network graphs
 
+## Circle graph
 G = nx.from_pandas_edgelist(u_el_vector.drop_duplicates(ignore_index=True).join(elements, on=0, how='left')[[0, 1, 'crust_crc_handbook',]].sort_values('crust_crc_handbook'), source=0, target=1)
 
 nx.draw_circular(G, with_labels=True, node_size=100, width=0.1, font_size=5)
 plt.savefig(f"figures/chemistry/u_elements_circular_network.jpeg", dpi=300, format='jpeg')
 plt.close()
 
+
+## Spring layout
+
+G = nx.from_pandas_edgelist(re_true_el_vector, source=0, target=1)
+degree_centrality = nx.centrality.degree_centrality(G)
+betweenness_centrality = nx.centrality.betweenness_centrality(G)
+pos = nx.spring_layout(G, iterations=15, seed=1721)
+
+node_size =  [v * 100 for v in degree_centrality.values()]
+node_color =  [v * 10 for v in betweenness_centrality.values()]
+nx.draw_networkx(G, pos=pos, node_color=node_color, node_size=node_size, width=0.15, font_size=5)
+plt.savefig(f"figures/chemistry/re_true_elements_spring_network.jpeg", dpi=300, format='jpeg')
+plt.close()
+
+## test the degree centrality
+(sorted(degree_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
+(sorted(betweenness_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
+
+
+## analyse specific elements
+minerals = re_true_el.loc[re_true_el['Elements'].isin(['As'])].index
+test = mr_data.loc[minerals]
+
+test.groupby('CLASS').size()
 
 # export to csv
 cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep='\t')
