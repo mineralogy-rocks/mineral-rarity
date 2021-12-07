@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -163,9 +164,20 @@ abundance['tu + u/all'] = (abundance['abundance_tu'] + abundance['abundance_u'])
 # join elements data
 abundance = abundance.join(elements, how='left')
 abundance['ion_radius'].replace(',','.', regex=True, inplace=True)
+abundance['atomic_mass'].replace(',','.', regex=True, inplace=True)
 abundance['electronegativity'].replace(',','.', regex=True, inplace=True)
 abundance['crust_crc_handbook'].replace(',','.', regex=True, inplace=True)
+abundance['crust_kaye_laby'].replace(',','.', regex=True, inplace=True)
+abundance['crust_greenwood'].replace(',','.', regex=True, inplace=True)
+abundance['crust_ahrens_taylor'].replace(',','.', regex=True, inplace=True)
+abundance['crust_ahrens_wanke'].replace(',','.', regex=True, inplace=True)
+abundance['crust_ahrens_waver'].replace(',','.', regex=True, inplace=True)
+abundance['upper_crust_ahrens_taylor'].replace(',','.', regex=True, inplace=True)
+abundance['upper_crust_ahrens_shaw'].replace(',','.', regex=True, inplace=True)
 
+abundance.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+
+abundance['electron_affinity'] = pd.to_numeric(abundance['electron_affinity'])
 abundance['Elements'] = abundance.index
 
 # Dot plot of elements, arranged by abundance in crust grouped by rarity groups
@@ -173,11 +185,11 @@ sns.set_theme(style="whitegrid")
 
 # Make the PairGrid
 g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=False),
-                 x_vars=['re_true/all', 're + rr/all', 're + rr + tr/all', 't/all', 'u/all', 'tu + u/all'], y_vars=["Elements"],
+                 x_vars=['all', 're_true/all', 're + rr/all', 're + rr + tr/all', 't/all', 'u/all', 'tu + u/all'], y_vars=["Elements"],
                  hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
 
 
-g.map(sns.scatterplot, size=abundance['ion_radius'].to_numpy(dtype=float), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
+g.map(sns.scatterplot, size=abundance['electron_affinity'].to_numpy(), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
 
 g.add_legend(adjust_subtitles=True)
 
@@ -185,7 +197,7 @@ g.add_legend(adjust_subtitles=True)
 g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
 
 # Use semantically meaningful titles for the columns
-titles = ['tRE/All', 'RE + RR', 'RE + RR + TR', 'T', 'U', 'TU + U']
+titles = ['ALL', 'tRE/All', 'RE + RR', 'RE + RR + TR', 'T', 'U', 'TU + U']
 
 for ax, title in zip(g.axes.flat, titles):
 
@@ -198,7 +210,9 @@ for ax, title in zip(g.axes.flat, titles):
 
 sns.despine(left=True, bottom=True)
 
-g.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
+
+plt.close()
 
 
 # Chalcophile and Siderophile elements, rare in Earth's Crust
@@ -299,7 +313,7 @@ cooccurrence_u_norm = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[
 
 
 # Group by each element and calculate sum of occurrences for each
-cooccurrence_size = cooccurrence_re_true.sum()
+cooccurrence_size = cooccurrence_r.sum()
 cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
 cooccurrence_size = cooccurrence_re.sum()
@@ -307,15 +321,20 @@ cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
 # calculate unique cooccurrences
 
-re_true_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
+mr_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
 
 # create network graphs
 
 ## Circle graph
-G = nx.from_pandas_edgelist(u_el_vector.drop_duplicates(ignore_index=True).join(elements, on=0, how='left')[[0, 1, 'crust_crc_handbook',]].sort_values('crust_crc_handbook'), source=0, target=1)
+circular_data = re_true_el_vector.drop_duplicates(ignore_index=True).join(abundance, on=0, how='left')[[0, 1, 'crust_crc_handbook',]].sort_values('crust_crc_handbook')
+circular_data['crust_crc_handbook'] = pd.to_numeric(circular_data['crust_crc_handbook'])
+circular_data['crust_crc_handbook'] = np.log(circular_data['crust_crc_handbook'])
 
-nx.draw_circular(G, with_labels=True, node_size=100, width=0.1, font_size=5)
-plt.savefig(f"figures/chemistry/u_elements_circular_network.jpeg", dpi=300, format='jpeg')
+G = nx.from_pandas_edgelist(circular_data, source=0, target=1)
+node_size =  [(v * 10 if not np.isnan(v) else 100) for v in circular_data['crust_crc_handbook'].drop_duplicates().values]
+
+nx.draw_circular(G, with_labels=True, node_size=node_size, width=0.1, font_size=5)
+plt.savefig(f"figures/chemistry/re_true_elements_circular_network.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
@@ -324,24 +343,41 @@ plt.close()
 G = nx.from_pandas_edgelist(re_true_el_vector, source=0, target=1)
 degree_centrality = nx.centrality.degree_centrality(G)
 betweenness_centrality = nx.centrality.betweenness_centrality(G)
+closeness_centrality = nx.centrality.closeness_centrality(G)  # save results in a variable to use again
+eigenvector_centrality = nx.centrality.eigenvector_centrality(G)
 pos = nx.spring_layout(G, iterations=15, seed=1721)
 
-node_size =  [v * 100 for v in degree_centrality.values()]
-node_color =  [v * 10 for v in betweenness_centrality.values()]
-nx.draw_networkx(G, pos=pos, node_color=node_color, node_size=node_size, width=0.15, font_size=5)
-plt.savefig(f"figures/chemistry/re_true_elements_spring_network.jpeg", dpi=300, format='jpeg')
+node_size =  [v * 1000 for v in degree_centrality.values()]
+node_color =  [v * 10 for v in eigenvector_centrality.values()]
+plt.figure(figsize=(10, 9))
+plt.axis('off')
+
+nx.draw_networkx_nodes(G, pos, nodelist=G.nodes(), node_color=node_color, node_size=node_size, alpha=0.7, cmap=plt.cm.jet)
+nx.draw_networkx_edges(
+    G,
+    pos,
+    edgelist=G.edges(),
+    width=0.1,
+)
+nx.draw_networkx_labels(G, pos=pos,  font_size=10)
+
+plt.tight_layout()
+plt.savefig(f"figures/chemistry/re_true_elements_spring_network_eigenvector.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 ## test the degree centrality
 (sorted(degree_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 (sorted(betweenness_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
-
+(sorted(closeness_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
+(sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements
-minerals = re_true_el.loc[re_true_el['Elements'].isin(['As'])].index
+minerals = mr_el.loc[mr_el['Elements'].isin(['Nd'])].index
 test = mr_data.loc[minerals]
+mr_el.loc[minerals].groupby('Elements').size().sort_values()
 
 test.groupby('CLASS').size()
+
 
 # export to csv
 cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep='\t')
