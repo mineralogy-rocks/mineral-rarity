@@ -177,6 +177,9 @@ abundance['upper_crust_ahrens_shaw'].replace(',','.', regex=True, inplace=True)
 abundance.replace(r'^\s*$', np.nan, regex=True, inplace=True)
 
 abundance['electron_affinity'] = pd.to_numeric(abundance['electron_affinity'])
+abundance['atomic_number'] = pd.to_numeric(abundance['atomic_number'])
+abundance['crust_crc_handbook'] = pd.to_numeric(abundance['crust_crc_handbook'])
+abundance['ion_radius'] = pd.to_numeric(abundance['ion_radius'])
 abundance['Elements'] = abundance.index
 
 
@@ -210,29 +213,31 @@ for ax, title in zip(g.axes.flat, titles):
 
 sns.despine(left=True, bottom=True)
 
-plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all_test.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
 # Dot plot of elements, sorted by goldschmidt groups (for Vitalii)
 
 sns.set_theme(style="whitegrid")
+initial_data = abundance.sort_values(['goldschmidt_classification', 'crust_crc_handbook'])
 
 # Make the PairGrid
-g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=False),
+g = sns.PairGrid(data=initial_data,
                  x_vars=['all', 're_true/all', 're + rr/all', 're + rr + tr/all', 't/all', 'u/all', 'tu + u/all'], y_vars=["Elements"],
                  hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
 
 
-g.map(sns.scatterplot, size=abundance['ion_radius'].to_numpy(), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
+g.map(sns.scatterplot, size=initial_data['atomic_number'], linewidth=0.5, marker='o', edgecolor='black')
 
-g.add_legend(adjust_subtitles=True)
+g.add_legend()
+
 
 # Use the same x axis limits on all columns and add better labels
 g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
 
 # Use semantically meaningful titles for the columns
-titles = ['ALL', 'tRE/All', 'RE + RR', 'RE + RR + TR', 'T', 'U', 'TU + U']
+titles = ['All IMA-approved minerals', 'tRE/All', '(RE + RR)/All', '(RE + RR + TR)/All', 'T/All', 'U/All', '(TU + U)/All']
 
 for ax, title in zip(g.axes.flat, titles):
 
@@ -245,7 +250,40 @@ for ax, title in zip(g.axes.flat, titles):
 
 sns.despine(left=True, bottom=True)
 
-plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all_test.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/dot_plot_sorted_by_crustal_abundance_size_atomic_number.jpeg", dpi=300, format='jpeg')
+plt.close()
+
+
+# Dot plot with a Facet Grid
+
+sns.set_theme(style="whitegrid")
+initial_data = abundance.sort_values(['goldschmidt_classification', 'ion_radius'])
+
+g = sns.FacetGrid(initial_data, col='goldschmidt_classification', height=10, aspect=.25, hue='crust_crc_handbook', palette='flare')
+
+
+g.map_dataframe(sns.scatterplot, x='re_true/all', y='Elements', legend='brief', size=initial_data['ion_radius'], linewidth=0.5, marker='o', edgecolor='black')
+
+g.add_legend()
+
+# Use the same x axis limits on all columns and add better labels
+g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
+
+# Use semantically meaningful titles for the columns
+titles = ['Atmophile', 'Chalcophile', 'Lithophile', 'Siderophile']
+
+for ax, title in zip(g.axes.flat, titles):
+
+    # Set a different title for each axes
+    ax.set(title=title)
+
+    # Make the grid horizontal instead of vertical
+    ax.xaxis.grid(False)
+    ax.yaxis.grid(True)
+
+sns.despine(left=True, bottom=True)
+
+plt.savefig(f"figures/chemistry/dot_plot_sorted_by_ion_radius.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
@@ -400,10 +438,10 @@ test.groupby('CLASS').size()
 
 
 # export to csv
-cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep='\t')
-cooccurrence_all.to_csv('supplementary_data/cooc_all.csv', sep='\t')
-cooccurrence_r.to_csv('supplementary_data/cooc_r.csv', sep='\t')
-cooccurrence_re.to_csv('supplementary_data/cooc_re.csv', sep='\t')
-cooccurrence_rr.to_csv('supplementary_data/cooc_rr.csv', sep='\t')
-cooccurrence_t.to_csv('supplementary_data/cooc_t.csv', sep='\t')
-cooccurrence_u.to_csv('supplementary_data/cooc_u.csv', sep='\t')
+cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep=',')
+cooccurrence_all.to_csv('supplementary_data/cooc_all.csv', sep=',')
+cooccurrence_r.to_csv('supplementary_data/cooc_r.csv', sep=',')
+cooccurrence_re.to_csv('supplementary_data/cooc_re.csv', sep=',')
+cooccurrence_rr.to_csv('supplementary_data/cooc_rr.csv', sep=',')
+cooccurrence_t.to_csv('supplementary_data/cooc_t.csv', sep=',')
+cooccurrence_u.to_csv('supplementary_data/cooc_u.csv', sep=',')
