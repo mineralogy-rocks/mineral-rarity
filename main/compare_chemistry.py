@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -180,6 +179,7 @@ abundance.replace(r'^\s*$', np.nan, regex=True, inplace=True)
 abundance['electron_affinity'] = pd.to_numeric(abundance['electron_affinity'])
 abundance['Elements'] = abundance.index
 
+
 # Dot plot of elements, arranged by abundance in crust grouped by rarity groups
 sns.set_theme(style="whitegrid")
 
@@ -214,11 +214,39 @@ plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all_test.jpeg", dpi=300
 plt.close()
 
 
-# Chalcophile and Siderophile elements, rare in Earth's Crust
-chalc_sidero_el = ['Sn', 'As', 'Ge', 'Mo', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', 'Se', 'Pd', 'Bi', 'Pt', 'Au', 'Os', 'Te',
-                   'Rh', 'Ru', 'Ir', 'Re']
+# Dot plot of elements, sorted by goldschmidt groups (for Vitalii)
 
-abundance.loc[abundance.index.isin(chalc_sidero_el)]['re + rr + tr/all'].median()
+sns.set_theme(style="whitegrid")
+
+# Make the PairGrid
+g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=False),
+                 x_vars=['all', 're_true/all', 're + rr/all', 're + rr + tr/all', 't/all', 'u/all', 'tu + u/all'], y_vars=["Elements"],
+                 hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
+
+
+g.map(sns.scatterplot, size=abundance['ion_radius'].to_numpy(), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
+
+g.add_legend(adjust_subtitles=True)
+
+# Use the same x axis limits on all columns and add better labels
+g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
+
+# Use semantically meaningful titles for the columns
+titles = ['ALL', 'tRE/All', 'RE + RR', 'RE + RR + TR', 'T', 'U', 'TU + U']
+
+for ax, title in zip(g.axes.flat, titles):
+
+    # Set a different title for each axes
+    ax.set(title=title)
+
+    # Make the grid horizontal instead of vertical
+    ax.xaxis.grid(False)
+    ax.yaxis.grid(True)
+
+sns.despine(left=True, bottom=True)
+
+plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all_test.jpeg", dpi=300, format='jpeg')
+plt.close()
 
 
 # Binary plot: mineral abundance vs crustal abundance of element
@@ -303,13 +331,6 @@ cooccurrence_r = calculate_cooccurrence_matrix(r_el_vector[0], r_el_vector[1])
 cooccurrence_t = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1])
 cooccurrence_u = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1])
 
-cooccurrence_all_norm = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1], norm='index')
-cooccurrence_re_true_norm = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1], norm='index')
-cooccurrence_re_norm = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1], norm='index')
-cooccurrence_rr_norm = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1], norm='index')
-cooccurrence_t_norm = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1], norm='index')
-cooccurrence_u_norm = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1], norm='index')
-
 
 # Group by each element and calculate sum of occurrences for each
 cooccurrence_size = cooccurrence_r.sum()
@@ -333,7 +354,7 @@ G = nx.from_pandas_edgelist(circular_data, source=0, target=1)
 node_size =  [(v * 10 if not np.isnan(v) else 100) for v in circular_data['crust_crc_handbook'].drop_duplicates().values]
 
 nx.draw_circular(G, with_labels=True, node_size=node_size, width=0.1, font_size=5)
-plt.savefig(f"figures/chemistry/re_true_elements_circular_network.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/circular_network/re_true_elements.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
@@ -361,7 +382,7 @@ nx.draw_networkx_edges(
 nx.draw_networkx_labels(G, pos=pos,  font_size=10)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/re_true_elements_spring_network_eigenvector.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/re_true_elements_eigenvector.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 ## test the degree centrality
@@ -381,6 +402,7 @@ test.groupby('CLASS').size()
 # export to csv
 cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep='\t')
 cooccurrence_all.to_csv('supplementary_data/cooc_all.csv', sep='\t')
+cooccurrence_r.to_csv('supplementary_data/cooc_r.csv', sep='\t')
 cooccurrence_re.to_csv('supplementary_data/cooc_re.csv', sep='\t')
 cooccurrence_rr.to_csv('supplementary_data/cooc_rr.csv', sep='\t')
 cooccurrence_t.to_csv('supplementary_data/cooc_t.csv', sep='\t')
