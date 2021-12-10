@@ -379,7 +379,7 @@ cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
 # calculate unique cooccurrences
 
-mr_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
+r_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
 
 # create network graphs
 
@@ -398,7 +398,7 @@ plt.close()
 
 ## Spring layout
 
-G = nx.from_pandas_edgelist(re_true_el_vector, source=0, target=1)
+G = nx.from_pandas_edgelist(r_el_vector, source=0, target=1)
 degree_centrality = nx.centrality.degree_centrality(G)
 betweenness_centrality = nx.centrality.betweenness_centrality(G)
 closeness_centrality = nx.centrality.closeness_centrality(G)  # save results in a variable to use again
@@ -420,7 +420,7 @@ nx.draw_networkx_edges(
 nx.draw_networkx_labels(G, pos=pos,  font_size=10)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/re_true_elements_eigenvector.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/spring_network/r_elements_eigenvector.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 ## test the degree centrality

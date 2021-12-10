@@ -1,14 +1,10 @@
 import pandas as pd
-import numpy as np
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
-    get_mineral_clarks
+from functions.helpers import parse_rruff, parse_mindat, split_by_rarity_groups
 
 # -*- coding: utf-8 -*-
 """
@@ -41,3 +37,23 @@ mr_data = ns.join(mindat_rruff, how='inner')
 mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
 
 r, re_true, re, rr, t, tr, tu, u = split_by_rarity_groups(mr_data)
+
+
+# calculate "triclinic" index yearly
+
+discovery_rate = mr_data.loc[mr_data['discovery_year'].notna()]
+
+discovery_rate.loc[:,'triclinic'] = 0
+discovery_rate.loc[:,'isometric'] = 0
+discovery_rate.loc[discovery_rate['Crystal System'] == 'triclinic', 'triclinic'] = 1
+discovery_rate.loc[discovery_rate['Crystal System'] == 'isometric', 'isometric'] = 1
+
+discovery_rate = discovery_rate.sort_values('discovery_year', ascending=True)
+
+discovery_rate = discovery_rate.groupby('discovery_year').agg(
+    isometric=pd.NamedAgg(column="isometric", aggfunc="sum"),
+    triclinic=pd.NamedAgg(column="triclinic", aggfunc="sum"),
+)
+
+discovery_rate['triclinic_index'] = discovery_rate['triclinic'] / discovery_rate['isometric']
+
