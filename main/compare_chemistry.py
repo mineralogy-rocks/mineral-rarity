@@ -189,7 +189,7 @@ g = sns.PairGrid(data=abundance.sort_values('crust_crc_handbook', ascending=Fals
                  hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
 
 
-g.map(sns.scatterplot, size=abundance['electron_affinity'].to_numpy(), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
+g.map(sns.scatterplot, size=abundance['ion_radius'].to_numpy(), legend='brief', linewidth=0.5, marker='o', edgecolor='black')
 
 g.add_legend(adjust_subtitles=True)
 
@@ -210,8 +210,7 @@ for ax, title in zip(g.axes.flat, titles):
 
 sns.despine(left=True, bottom=True)
 
-plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, format='jpeg')
-
+plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all_test.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
