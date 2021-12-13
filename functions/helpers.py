@@ -186,3 +186,15 @@ def get_mineral_clarks(data):
     data_el_spread = pd.DataFrame(data_el.groupby('Elements').size().sort_values(), columns=['abundance'])
 
     return data_el, data_el_spread
+
+
+def get_crystal_system_obj():
+    return pd.DataFrame([
+        {'system': 'triclinic', 'order': 0, 'color': 'aquamarine' },
+        {'system': 'monoclinic', 'order': 1, 'color': 'teal'},
+        {'system': 'orthorhombic', 'order': 2, 'color': 'indigo'},
+        {'system': 'trigonal', 'order': 3, 'color': 'chartreuse'},
+        {'system': 'tetragonal', 'order': 4, 'color': 'coral'},
+        {'system': 'hexagonal', 'order': 5, 'color': 'gold'},
+        {'system': 'isometric', 'order': 6, 'color': 'crimson'},
+        ]).set_index('system')

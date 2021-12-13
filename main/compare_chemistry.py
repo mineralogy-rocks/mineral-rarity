@@ -429,13 +429,44 @@ plt.close()
 (sorted(closeness_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
-## analyse specific elements
-minerals = mr_el.loc[mr_el['Elements'].isin(['Nd'])].index
-test = mr_data.loc[minerals]
-mr_el.loc[minerals].groupby('Elements').size().sort_values()
+## analyse specific elements EXACT OR INEXACT MATCH
+elements = ['Ru']
+exact = False
 
-test.groupby('CLASS').size()
+minerals = r_el.loc[r_el['Elements'].isin(elements)]
+minerals['count'] = minerals.groupby(minerals.index).count()
+if exact:
+    minerals = minerals.loc[minerals['count'] == len(elements)]
+minerals = minerals.index
+test = mr_data.loc[minerals].drop_duplicates()
+r_el.loc[minerals].groupby('Elements').size().sort_values()
+test.groupby('CLASS').size().sort_values()
+test.groupby('FAMILY').size().sort_values()
 
+### further analyse anions of these elements
+anions_to_check = ['S']
+
+anions = pd.DataFrame(test['anions_theoretical'].str.split('; *?').explode(0))
+anions = anions.loc[anions['anions_theoretical'].isin(anions_to_check)].index.drop_duplicates()
+test = mr_data.loc[anions].drop_duplicates()
+test.groupby('CLASS').size().sort_values()
+
+### check unique anions within a subset
+anions = pd.DataFrame(test['anions_theoretical'].str.split('; *?').explode(0))
+anions_unique = anions.groupby('anions_theoretical').size().sort_values()
+
+
+### further analyse cations of these elements
+cations_to_check = ['Na', 'Pb', 'As']
+
+cations = pd.DataFrame(test['cations_theoretical'].str.split('; *?').explode(0))
+cations = cations.loc[cations['cations_theoretical'].isin(cations_to_check)].index.drop_duplicates()
+test = mr_data.loc[cations].drop_duplicates()
+test.groupby('CLASS').size().sort_values()
+
+### check unique cations within a subset
+cations = pd.DataFrame(test['cations_theoretical'].str.split('; *?').explode(0))
+cations_unique = cations.groupby('cations_theoretical').size().sort_values()
 
 # export to csv
 cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep=',')

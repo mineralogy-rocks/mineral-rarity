@@ -1,10 +1,12 @@
 import pandas as pd
+import numpy as np
 
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import parse_rruff, parse_mindat, split_by_rarity_groups
+from functions.helpers import parse_rruff, parse_mindat, split_by_rarity_groups, get_crystal_system_obj
 
 # -*- coding: utf-8 -*-
 """
@@ -35,8 +37,34 @@ mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 # create final subset for the analysis
 mr_data = ns.join(mindat_rruff, how='inner')
 mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
+mr_data.loc[mr_data['Crystal System'].isin(['icosahedral', 'amorphous']), 'Crystal System'] = np.nan
+
+# create Crystal System helper object
+
+crystal_system = get_crystal_system_obj()
 
 r, re_true, re, rr, t, tr, tu, u = split_by_rarity_groups(mr_data)
+
+
+# Pie chart: Crystal classes for RE
+
+pie_ = u.groupby('Crystal System').size()
+pie_ = pd.DataFrame(pie_/pie_.sum() * 100)
+pie_ = pie_.join(crystal_system).sort_values('order')
+
+fig1, ax1 = plt.subplots()
+ax1.pie(pie_[0], colors=pie_['color'], labels=pie_.index, autopct='%1.1f%%',startangle=90)
+
+ax1.axis('equal')
+
+plt.savefig(f"figures/crystal/u_pie_chart.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+
+# symmetry index
+(pie_.loc['isometric', 0] + pie_.loc['hexagonal', 0] + pie_.loc['trigonal', 0] + pie_.loc['tetragonal', 0]) \
+/ (pie_.loc['triclinic', 0] + pie_.loc['monoclinic', 0] + pie_.loc['orthorhombic', 0])
 
 
 # calculate "triclinic" index yearly
