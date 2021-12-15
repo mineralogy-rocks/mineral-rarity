@@ -220,7 +220,7 @@ plt.close()
 # Dot plot of elements, sorted by goldschmidt groups (for Vitalii)
 
 sns.set_theme(style="whitegrid")
-initial_data = abundance.sort_values(['goldschmidt_classification', 'crust_crc_handbook'])
+initial_data = abundance.sort_values(['goldschmidt_classification', 'crust_crc_handbook'], ascending=False)
 
 # Make the PairGrid
 g = sns.PairGrid(data=initial_data,
@@ -228,7 +228,7 @@ g = sns.PairGrid(data=initial_data,
                  hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
 
 
-g.map(sns.scatterplot, size=initial_data['atomic_number'], linewidth=0.5, marker='o', edgecolor='black')
+g.map(sns.scatterplot, size=initial_data['ion_radius'], linewidth=0.5, marker='o', edgecolor='black')
 
 g.add_legend()
 
@@ -250,7 +250,7 @@ for ax, title in zip(g.axes.flat, titles):
 
 sns.despine(left=True, bottom=True)
 
-plt.savefig(f"figures/chemistry/dot_plot_sorted_by_crustal_abundance_size_atomic_number.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/dot_plot_sorted_by_crustal_abundance_size_ion_radius.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
@@ -430,10 +430,11 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-elements = ['Ru']
+elements = ['Pb']
+initial_data = re_true_el
 exact = False
 
-minerals = r_el.loc[r_el['Elements'].isin(elements)]
+minerals = initial_data.loc[initial_data['Elements'].isin(elements)]
 minerals['count'] = minerals.groupby(minerals.index).count()
 if exact:
     minerals = minerals.loc[minerals['count'] == len(elements)]
@@ -441,10 +442,11 @@ minerals = minerals.index
 test = mr_data.loc[minerals].drop_duplicates()
 r_el.loc[minerals].groupby('Elements').size().sort_values()
 test.groupby('CLASS').size().sort_values()
+test.groupby('SUBCLASS').size().sort_values()
 test.groupby('FAMILY').size().sort_values()
 
 ### further analyse anions of these elements
-anions_to_check = ['S']
+anions_to_check = ['SO_4_']
 
 anions = pd.DataFrame(test['anions_theoretical'].str.split('; *?').explode(0))
 anions = anions.loc[anions['anions_theoretical'].isin(anions_to_check)].index.drop_duplicates()
