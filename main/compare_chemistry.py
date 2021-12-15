@@ -31,12 +31,6 @@ locs_md = parse_mindat(locs_md)
 elements = pd.read_csv('data/elements_data.csv', sep=',')
 elements.set_index('element', inplace=True)
 
-# Petrological classifications
-
-elements.loc[elements.index.isin(['Pb', 'Sr', 'Ba', 'K', 'Rb', 'Cs']), 'petrology'] = 'LILE'
-elements.loc[elements.index.isin(['P', 'Nb', 'Ta', 'W', 'Zr', 'Hf', 'Th', 'U', 'Ti', 'Y', 'Lu', 'La', 'Eu']), 'petrology'] = 'HFSE'
-elements.loc[elements.index.isin(['Si', 'Al', 'Cr', 'Fe', 'Mg', 'Cu', 'Zn', 'Ni', 'Co', 'Ca']), 'petrology'] = 'MRFE'
-
 # Clean and transform MR data
 ns.set_index('Mineral_Name', inplace=True)
 
@@ -182,6 +176,9 @@ abundance['crust_crc_handbook'] = pd.to_numeric(abundance['crust_crc_handbook'])
 abundance['ion_radius'] = pd.to_numeric(abundance['ion_radius'])
 abundance['Elements'] = abundance.index
 
+# Remove REE and Ln for plots consistency
+abundance = abundance.loc[~abundance.index.isin(['REE', 'Ln'])]
+
 
 # Dot plot of elements, arranged by abundance in crust grouped by rarity groups
 sns.set_theme(style="whitegrid")
@@ -217,7 +214,7 @@ plt.savefig(f"figures/chemistry/dot_plot_proportion_from_all.jpeg", dpi=300, for
 plt.close()
 
 
-# Dot plot of elements, sorted by goldschmidt groups (for Vitalii)
+# Dot plot of elements, sorted by goldschmidt groups and elements abundance (for Vitalii)
 
 sns.set_theme(style="whitegrid")
 initial_data = abundance.sort_values(['goldschmidt_classification', 'crust_crc_handbook'], ascending=False)
@@ -251,6 +248,43 @@ for ax, title in zip(g.axes.flat, titles):
 sns.despine(left=True, bottom=True)
 
 plt.savefig(f"figures/chemistry/dot_plot_sorted_by_crustal_abundance_size_ion_radius.jpeg", dpi=300, format='jpeg')
+plt.close()
+
+
+# Dot plot of elements, sorted by goldschmidt groups and mineral ratio (for Vitalii)
+
+sns.set_theme(style="whitegrid")
+initial_data = abundance.sort_values(['goldschmidt_classification', 'abundance_all'], ascending=False)
+
+# Make the PairGrid
+g = sns.PairGrid(data=initial_data,
+                 x_vars=['all', 're_true/all', 're + rr/all', 're + rr + tr/all', 't/all', 'u/all', 'tu + u/all'], y_vars=["Elements"],
+                 hue="goldschmidt_classification", hue_order=None, height=10, aspect=.25)
+
+
+g.map(sns.scatterplot, size=initial_data['ion_radius'], linewidth=0.5, marker='o', edgecolor='black')
+
+g.add_legend()
+
+
+# Use the same x axis limits on all columns and add better labels
+g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
+
+# Use semantically meaningful titles for the columns
+titles = ['All IMA-approved minerals', 'tRE/All', '(RE + RR)/All', '(RE + RR + TR)/All', 'T/All', 'U/All', '(TU + U)/All']
+
+for ax, title in zip(g.axes.flat, titles):
+
+    # Set a different title for each axes
+    ax.set(title=title)
+
+    # Make the grid horizontal instead of vertical
+    ax.xaxis.grid(False)
+    ax.yaxis.grid(True)
+
+sns.despine(left=True, bottom=True)
+
+plt.savefig(f"figures/chemistry/dot_plot_sorted_by_mineral_abundance_size_ion_radius.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
