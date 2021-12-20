@@ -9,7 +9,7 @@ import networkx as nx
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
-    get_mineral_clarks
+    get_mineral_clarks, get_ns_obj
 
 # -*- coding: utf-8 -*-
 """
@@ -34,13 +34,15 @@ elements.set_index('element', inplace=True)
 # Clean and transform MR data
 ns.set_index('Mineral_Name', inplace=True)
 
+ns_object = get_ns_obj()
+
 mindat_rruff = locs_md.join(rruff_data, how='outer')
 mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
 
 # create final subset for the analysis
 mr_data = ns.join(mindat_rruff, how='inner')
 
-r, re_true, re, rr, t, tr, tu, u = split_by_rarity_groups(mr_data)
+r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u = split_by_rarity_groups(mr_data)
 
 ##### RE MINERALS  #####
 
@@ -70,18 +72,18 @@ RE = pd.DataFrame(re.groupby('CLASS').size(), columns=['RE'])
 tRE = pd.DataFrame(re_true.groupby('CLASS').size(), columns=['tRE'])
 RE.join(tRE, how='inner')
 
-pie_ = re.groupby('CLASS').size()
-pie_ = pie_/pie_.sum() * 100
+pie_ = rr.groupby('CLASS').size()
+pie_ = pd.DataFrame(pie_/pie_.sum() * 100)
+pie_ = pie_.join(ns_object).sort_values('order')
 
-
-# Pie chart: Nickel-Strunz classes for RE
+# Pie chart: Nickel-Strunz classes
 
 fig1, ax1 = plt.subplots()
-ax1.pie(pie_, labels=pie_.index, autopct='%1.1f%%',startangle=90)
+ax1.pie(pie_[0], colors=pie_['color'], labels=pie_.index, autopct='%1.1f%%',startangle=90)
 
 ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
-plt.savefig(f"figures/endemic_minerals/pie_chart_nickel_strunz.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/pie_chart/rr_nickel_strunz.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
@@ -119,6 +121,7 @@ plt.close()
 ##### Chemistry analytics #####
 
 re_true_el, re_true_el_spread = get_mineral_clarks(re_true)
+re_rr_tr_el, re_rr_tr_el_spread = get_mineral_clarks(re_rr_tr)
 re_el, re_el_spread = get_mineral_clarks(re)
 rr_el, rr_el_spread = get_mineral_clarks(rr)
 r_el, r_el_spread = get_mineral_clarks(r)
@@ -128,8 +131,9 @@ tu_el, tu_el_spread = get_mineral_clarks(tu)
 t_el, t_el_spread = get_mineral_clarks(t)
 
 u_el, u_el_spread = get_mineral_clarks(u)
+tu_u_el, tu_u_el_spread = get_mineral_clarks(tu_u)
 
-mr_el,mr_el_spread = get_mineral_clarks(mr_data)
+mr_el, mr_el_spread = get_mineral_clarks(mr_data)
 
 # concat all and RE
 abundance = mr_el_spread.join(re_el_spread, how='outer', lsuffix='_all', rsuffix='_re')
@@ -351,6 +355,12 @@ plt.savefig(f"figures/chemistry/element_abundance_vs_mineral_clark.jpeg", dpi=30
 plt.close()
 
 
+# Get basic stats on each rarity group for each geochemical group
+## siderophile
+abundance['re + rr/all'].loc[['H', 'C', 'N']].mean()
+abundance['tu + u/all'].loc[['H', 'C', 'N']].max()
+
+
 # calculate elements co-occurrence matrixes
 # All
 mr_el_vector = mr_data.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
@@ -377,11 +387,17 @@ rr_el_vector[1] = pd.DataFrame(rr.Formula.str.extractall('(REE|[A-Z][a-z]?)').gr
 rr_el_vector = rr_el_vector.explode(1)
 rr_el_vector = rr_el_vector.loc[rr_el_vector[0] != rr_el_vector[1]]
 
-# RR
+# RE
 r_el_vector = r.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
 r_el_vector[1] = pd.DataFrame(r.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
 r_el_vector = r_el_vector.explode(1)
 r_el_vector = r_el_vector.loc[r_el_vector[0] != r_el_vector[1]]
+
+# RE+RR+TR
+re_rr_tr_el_vector = re_rr_tr.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
+re_rr_tr_el_vector[1] = pd.DataFrame(re_rr_tr.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+re_rr_tr_el_vector = re_rr_tr_el_vector.explode(1)
+re_rr_tr_el_vector = re_rr_tr_el_vector.loc[re_rr_tr_el_vector[0] != re_rr_tr_el_vector[1]]
 
 # T
 t_el_vector = t.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
@@ -395,14 +411,41 @@ u_el_vector[1] = pd.DataFrame(u.Formula.str.extractall('(REE|[A-Z][a-z]?)').grou
 u_el_vector = u_el_vector.explode(1)
 u_el_vector = u_el_vector.loc[u_el_vector[0] != u_el_vector[1]]
 
+# TU+U
+tu_u_el_vector = tu_u.Formula.str.extractall('(REE|[A-Z][a-z]?)').droplevel(1).reset_index().drop_duplicates(subset=['index', 0]).set_index('index')
+tu_u_el_vector[1] = pd.DataFrame(tu_u.Formula.str.extractall('(REE|[A-Z][a-z]?)').groupby(level=0)[0].apply(lambda x: list(set(x))))[0]
+tu_u_el_vector = tu_u_el_vector.explode(1)
+tu_u_el_vector = tu_u_el_vector.loc[tu_u_el_vector[0] != tu_u_el_vector[1]]
+
 cooccurrence_all = calculate_cooccurrence_matrix(mr_el_vector[0], mr_el_vector[1])
 cooccurrence_re_true = calculate_cooccurrence_matrix(re_true_el_vector[0], re_true_el_vector[1])
 cooccurrence_re = calculate_cooccurrence_matrix(re_el_vector[0], re_el_vector[1])
 cooccurrence_rr = calculate_cooccurrence_matrix(rr_el_vector[0], rr_el_vector[1])
 cooccurrence_r = calculate_cooccurrence_matrix(r_el_vector[0], r_el_vector[1])
+cooccurrence_re_rr_tr = calculate_cooccurrence_matrix(re_rr_tr_el_vector[0], re_rr_tr_el_vector[1])
 cooccurrence_t = calculate_cooccurrence_matrix(t_el_vector[0], t_el_vector[1])
 cooccurrence_u = calculate_cooccurrence_matrix(u_el_vector[0], u_el_vector[1])
+cooccurrence_tu_u = calculate_cooccurrence_matrix(tu_u_el_vector[0], tu_u_el_vector[1])
 
+
+# Check against specific elements
+## test chalcophile elements against S
+cooccurrence_all.loc['S'][['Zn', 'Cu', 'Ga', 'Pb', 'Sn', 'As', 'Ge', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', 'Se', 'Bi',
+                           'Te']]
+
+## test atmophile elements against O
+cooccurrence_all.loc['H'][['H', 'C', 'N']]
+
+## test siderophile elements against O
+siderophile_el = elements.loc[elements['goldschmidt_classification'] == 'Siderophile'].sort_values('crust_crc_handbook', ascending=False).index
+cooccurrence_all.loc['Fe'][['Fe', 'Mn', 'Ni', 'Co', 'Mo', 'Pd', 'Pt', 'Au', 'Os', 'Ru', 'Rh', 'Ir', 'Re']]
+
+## test lithophile elements against O
+lithophile_el = elements.loc[elements['goldschmidt_classification'] == 'Lithophile'].sort_values('crust_crc_handbook', ascending=False).index
+cooccurrence_all.loc['O'][['O', 'Si', 'Al', 'Ca', 'Na', 'Mg', 'K', 'Ti', 'P', 'F', 'Ba', 'Sr',
+                           'Zr', 'Cl', 'V', 'Cr', 'Rb', 'Ce', 'Nd', 'La', 'Y', 'Sc', 'Li', 'Nb',
+                           'B', 'Th', 'Pr', 'Sm', 'Gd', 'Dy', 'Er', 'Yb', 'Hf', 'Cs', 'Be', 'U',
+                           'Br', 'Ta', 'W', 'I']]
 
 # Group by each element and calculate sum of occurrences for each
 cooccurrence_size = cooccurrence_r.sum()
@@ -432,7 +475,7 @@ plt.close()
 
 ## Spring layout
 
-G = nx.from_pandas_edgelist(r_el_vector, source=0, target=1)
+G = nx.from_pandas_edgelist(re_rr_tr_el_vector, source=0, target=1)
 degree_centrality = nx.centrality.degree_centrality(G)
 betweenness_centrality = nx.centrality.betweenness_centrality(G)
 closeness_centrality = nx.centrality.closeness_centrality(G)  # save results in a variable to use again
@@ -454,7 +497,7 @@ nx.draw_networkx_edges(
 nx.draw_networkx_labels(G, pos=pos,  font_size=10)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/spring_network/r_elements_eigenvector.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/spring_network/re_rr_tr_elements_eigenvector.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 ## test the degree centrality
@@ -464,23 +507,24 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-elements = ['Pb']
-initial_data = re_true_el
+elements_ = ['F']
+initial_data = tu_u_el
 exact = False
 
-minerals = initial_data.loc[initial_data['Elements'].isin(elements)]
+minerals = initial_data.loc[initial_data['Elements'].isin(elements_)]
 minerals['count'] = minerals.groupby(minerals.index).count()
 if exact:
-    minerals = minerals.loc[minerals['count'] == len(elements)]
+    minerals = minerals.loc[minerals['count'] == len(elements_)]
 minerals = minerals.index
 test = mr_data.loc[minerals].drop_duplicates()
-r_el.loc[minerals].groupby('Elements').size().sort_values()
+initial_data.loc[minerals].groupby('Elements').size().sort_values()
 test.groupby('CLASS').size().sort_values()
 test.groupby('SUBCLASS').size().sort_values()
 test.groupby('FAMILY').size().sort_values()
 
+test = test.loc[test['CLASS'] == 'Sulfides and Sulfosalts']
 ### further analyse anions of these elements
-anions_to_check = ['SO_4_']
+anions_to_check = ['Se']
 
 anions = pd.DataFrame(test['anions_theoretical'].str.split('; *?').explode(0))
 anions = anions.loc[anions['anions_theoretical'].isin(anions_to_check)].index.drop_duplicates()
@@ -508,7 +552,9 @@ cations_unique = cations.groupby('cations_theoretical').size().sort_values()
 cooccurrence_re_true.to_csv('supplementary_data/cooc_re_true.csv', sep=',')
 cooccurrence_all.to_csv('supplementary_data/cooc_all.csv', sep=',')
 cooccurrence_r.to_csv('supplementary_data/cooc_r.csv', sep=',')
+cooccurrence_re_rr_tr.to_csv('supplementary_data/cooc_re_rr_tr.csv', sep=',')
 cooccurrence_re.to_csv('supplementary_data/cooc_re.csv', sep=',')
 cooccurrence_rr.to_csv('supplementary_data/cooc_rr.csv', sep=',')
 cooccurrence_t.to_csv('supplementary_data/cooc_t.csv', sep=',')
 cooccurrence_u.to_csv('supplementary_data/cooc_u.csv', sep=',')
+cooccurrence_tu_u.to_csv('supplementary_data/cooc_tu_u.csv', sep=',')

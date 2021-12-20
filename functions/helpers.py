@@ -155,6 +155,7 @@ def calculate_cooccurrence_matrix(data0, data1, norm=False):
 
 def split_by_rarity_groups(data):
     r = data.loc[(data['locality_counts'] <= 4)]
+    re_rr_tr = data.loc[data['locality_counts'] <= 16]
     re_true = data.loc[
         ~((data['discovery_year'] > 2000) & (data['locality_counts'] == 1)) & (data['locality_counts'] == 1)]
     re = data.loc[(data['locality_counts'] == 1)]
@@ -165,6 +166,7 @@ def split_by_rarity_groups(data):
     tu = data.loc[(data['locality_counts'] > 16) & (data['locality_counts'] <= 70)]
 
     u = data.loc[(data['locality_counts'] > 70)]
+    tu_u = data.loc[(data['locality_counts'] > 16)]
 
     r.sort_values(by='discovery_year', inplace=True)
     re_true.sort_values(by='discovery_year', inplace=True)
@@ -175,7 +177,7 @@ def split_by_rarity_groups(data):
     tu.sort_values(by='discovery_year', inplace=True)
     u.sort_values(by='discovery_year', inplace=True)
 
-    return r, re_true, re, rr, t, tr, tu, u
+    return r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u
 
 
 def get_mineral_clarks(data):
@@ -187,10 +189,23 @@ def get_mineral_clarks(data):
 
     return data_el, data_el_spread
 
+def get_ns_obj():
+    return pd.DataFrame([
+        {'class': 'Borates', 'order': 0, 'color': 'green' },
+        {'class': 'Carbonates (Nitrates)', 'order': 1, 'color': 'teal'},
+        {'class': 'Elements', 'order': 2, 'color': 'indigo'},
+        {'class': 'Halides', 'order': 3, 'color': 'chartreuse'},
+        {'class': 'Organic Compounds', 'order': 4, 'color': 'coral'},
+        {'class': 'Oxides', 'order': 5, 'color': 'gold'},
+        {'class': 'Phosphates, Arsenates, Vanadates', 'order': 6, 'color': 'crimson'},
+        {'class': 'Silicates (Germanates)', 'order': 6, 'color': 'purple'},
+        {'class': 'Sulfates (selenates, tellurates, chromates, molybdates, wolframates)', 'order': 6, 'color': 'darkslateblue'},
+        {'class': 'Sulfides and Sulfosalts', 'order': 6, 'color': 'coral'},
+        ]).set_index('class')
 
 def get_crystal_system_obj():
     return pd.DataFrame([
-        {'system': 'triclinic', 'order': 0, 'color': 'aquamarine' },
+        {'system': 'triclinic', 'order': 0, 'color': 'cadetblue' },
         {'system': 'monoclinic', 'order': 1, 'color': 'teal'},
         {'system': 'orthorhombic', 'order': 2, 'color': 'indigo'},
         {'system': 'trigonal', 'order': 3, 'color': 'chartreuse'},
