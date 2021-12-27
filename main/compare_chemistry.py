@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -46,16 +47,19 @@ r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u = split_by_rarity_groups(mr_dat
 
 ##### RE MINERALS  #####
 
-re.loc[re['discovery_year'] < 1950]
-re_true.loc[re['discovery_year'] < 1950]
+
+tu_u.loc[tu_u['discovery_year'] >= 1950]
+re_true.loc[re_true['discovery_year'] < 1950]
+re_rr_tr.loc[re_rr_tr['discovery_year'] >= 1950]
+tr.loc[tr['discovery_year'] >= 1950]
 
 # during SD period
-re.loc[re['discovery_year'] < 1950].groupby('CLASS').size()
+u.groupby('CLASS').size()
 re_true.loc[re_true['discovery_year'] < 1950].groupby('CLASS').size()
 
 # during MPRD period
-re.loc[re['discovery_year'] >= 1950].groupby('CLASS').size()
-re_true.loc[re_true['discovery_year'] >= 1950].groupby('CLASS').size()
+re_rr_tr.loc[re_rr_tr['discovery_year'] >= 1950].groupby('CLASS').size()
+tr.loc[tr['discovery_year'] >= 1950].groupby('CLASS').size()
 
 # further analytics
 re.loc[(re['CLASS'] == 'Elements') & (re['locality_counts'] == 1)]
@@ -72,7 +76,7 @@ RE = pd.DataFrame(re.groupby('CLASS').size(), columns=['RE'])
 tRE = pd.DataFrame(re_true.groupby('CLASS').size(), columns=['tRE'])
 RE.join(tRE, how='inner')
 
-pie_ = rr.groupby('CLASS').size()
+pie_ = u.groupby('CLASS').size()
 pie_ = pd.DataFrame(pie_/pie_.sum() * 100)
 pie_ = pie_.join(ns_object).sort_values('order')
 
@@ -83,7 +87,7 @@ ax1.pie(pie_[0], colors=pie_['color'], labels=pie_.index, autopct='%1.1f%%',star
 
 ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
-plt.savefig(f"figures/chemistry/pie_chart/rr_nickel_strunz.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/pie_chart/u_nickel_strunz.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
@@ -102,7 +106,7 @@ rr.loc[rr['discovery_year'] >= 1950].groupby('CLASS').size()
 rr.groupby('CLASS').size()
 
 # during all periods
-pie_ = rr.groupby('CLASS').size()
+pie_ = tu.groupby('CLASS').size()
 pie_ = pie_/pie_.sum() * 100
 
 
@@ -437,7 +441,7 @@ cooccurrence_all.loc['S'][['Zn', 'Cu', 'Ga', 'Pb', 'Sn', 'As', 'Ge', 'Tl', 'In',
 cooccurrence_all.loc['H'][['H', 'C', 'N']]
 
 ## test siderophile elements against O
-siderophile_el = elements.loc[elements['goldschmidt_classification'] == 'Siderophile'].sort_values('crust_crc_handbook', ascending=False).index
+siderophile_el = elements.loc[elements['goldschmidt_classification'] == 'Chalcophile'].sort_values('crust_crc_handbook', ascending=False).index
 cooccurrence_all.loc['Fe'][['Fe', 'Mn', 'Ni', 'Co', 'Mo', 'Pd', 'Pt', 'Au', 'Os', 'Ru', 'Rh', 'Ir', 'Re']]
 
 ## test lithophile elements against O
@@ -447,8 +451,11 @@ cooccurrence_all.loc['O'][['O', 'Si', 'Al', 'Ca', 'Na', 'Mg', 'K', 'Ti', 'P', 'F
                            'B', 'Th', 'Pr', 'Sm', 'Gd', 'Dy', 'Er', 'Yb', 'Hf', 'Cs', 'Be', 'U',
                            'Br', 'Ta', 'W', 'I']]
 
+## test chalcophile elements
+abundance.loc[['S', 'Zn', 'Cu', 'Ga', 'Pb', 'Sn', 'As', 'Ge', 'Tl', 'In', 'Sb', 'Cd', 'Hg', 'Ag', 'Se', 'Bi', 'Te']]['tu + u/all'].max()
+
 # Group by each element and calculate sum of occurrences for each
-cooccurrence_size = cooccurrence_r.sum()
+cooccurrence_size = cooccurrence_re_rr_tr.sum()
 cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
 cooccurrence_size = cooccurrence_re.sum()
@@ -456,7 +463,7 @@ cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 
 # calculate unique cooccurrences
 
-r_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
+tu_u_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
 
 # create network graphs
 
@@ -474,8 +481,7 @@ plt.close()
 
 
 ## Spring layout
-
-G = nx.from_pandas_edgelist(re_rr_tr_el_vector, source=0, target=1)
+G = nx.from_pandas_edgelist(tu_u_el_vector, source=0, target=1)
 degree_centrality = nx.centrality.degree_centrality(G)
 betweenness_centrality = nx.centrality.betweenness_centrality(G)
 closeness_centrality = nx.centrality.closeness_centrality(G)  # save results in a variable to use again
@@ -497,7 +503,7 @@ nx.draw_networkx_edges(
 nx.draw_networkx_labels(G, pos=pos,  font_size=10)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/spring_network/re_rr_tr_elements_eigenvector.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/spring_network/tu_u_elements_eigenvector.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 ## test the degree centrality
@@ -507,7 +513,7 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-elements_ = ['F']
+elements_ = ['W',]
 initial_data = tu_u_el
 exact = False
 
@@ -516,6 +522,7 @@ minerals['count'] = minerals.groupby(minerals.index).count()
 if exact:
     minerals = minerals.loc[minerals['count'] == len(elements_)]
 minerals = minerals.index
+# minerals = tu_u_el.index
 test = mr_data.loc[minerals].drop_duplicates()
 initial_data.loc[minerals].groupby('Elements').size().sort_values()
 test.groupby('CLASS').size().sort_values()
@@ -523,6 +530,17 @@ test.groupby('SUBCLASS').size().sort_values()
 test.groupby('FAMILY').size().sort_values()
 
 test = test.loc[test['CLASS'] == 'Sulfides and Sulfosalts']
+
+### check vica versa: by subsetting through a Class and then find out the primary elements
+minerals = tu_u_el.index
+test = mr_data.loc[minerals].drop_duplicates()
+test = test.loc[test['CLASS'] == 'Oxides']
+get_mineral_clarks(test)
+
+### find elements co-occurring with this set of data
+test_cooc = cooccurrence_r[['Br', 'I', 'Cl', 'Hg']]
+cooccurrence_tu_u[['Br', 'I']].describe()
+
 ### further analyse anions of these elements
 anions_to_check = ['Se']
 

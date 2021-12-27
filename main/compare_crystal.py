@@ -43,7 +43,7 @@ mr_data.loc[mr_data['Crystal System'].isin(['icosahedral', 'amorphous']), 'Cryst
 
 crystal_system = get_crystal_system_obj()
 
-r, re_true, re, rr, t, tr, tu, u = split_by_rarity_groups(mr_data)
+r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u = split_by_rarity_groups(mr_data)
 
 
 # Pie chart: Crystal classes for RE
