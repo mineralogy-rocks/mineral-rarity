@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -513,7 +512,7 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-elements_ = ['W',]
+elements_ = ['Ag']
 initial_data = tu_u_el
 exact = False
 
@@ -532,9 +531,9 @@ test.groupby('FAMILY').size().sort_values()
 test = test.loc[test['CLASS'] == 'Sulfides and Sulfosalts']
 
 ### check vica versa: by subsetting through a Class and then find out the primary elements
-minerals = tu_u_el.index
+minerals = re_true.index
 test = mr_data.loc[minerals].drop_duplicates()
-test = test.loc[test['CLASS'] == 'Oxides']
+test = test.loc[test['CLASS'] == 'Carbonates (Nitrates)']
 get_mineral_clarks(test)
 
 ### find elements co-occurring with this set of data
@@ -542,7 +541,7 @@ test_cooc = cooccurrence_r[['Br', 'I', 'Cl', 'Hg']]
 cooccurrence_tu_u[['Br', 'I']].describe()
 
 ### further analyse anions of these elements
-anions_to_check = ['Se']
+anions_to_check = ['OH']
 
 anions = pd.DataFrame(test['anions_theoretical'].str.split('; *?').explode(0))
 anions = anions.loc[anions['anions_theoretical'].isin(anions_to_check)].index.drop_duplicates()

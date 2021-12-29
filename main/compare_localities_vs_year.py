@@ -3,10 +3,8 @@ import numpy as np
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.font_manager
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib import rcParams
 plt.rcParams["font.family"] = "Arial"
 import seaborn as sns
 
@@ -84,34 +82,78 @@ discovery_rate_all = discovery_rate_all.loc[discovery_rate_all.index >= 1800]
 
 
 ### split discovery rate into Rarity groups
-mindat_rruff.loc[mindat_rruff['locality_counts'] <= 16, 'rarity'] = 'RE + RR + TR'
+mindat_rruff.loc[(mindat_rruff['locality_counts'] > 1) & (mindat_rruff['locality_counts'] <= 16), 'rarity'] = 'RR + TR'
 mindat_rruff.loc[mindat_rruff['locality_counts'] > 16, 'rarity'] = 'TU + U'
+mindat_rruff.loc[mindat_rruff['locality_counts'] == 1, 'rarity'] = 'RE'
 
 discovery_rate_classes = mindat_rruff.groupby(['discovery_year','rarity']).count().unstack()
-discovery_rate_classes.columns = ['RE+RR+TR', 'TU+U']
+discovery_rate_classes.columns = ['RE', 'RR+TR', 'TU+U']
 
 # stacked bar chart of discovery rate vs rarity groups
 sns.set(style="darkgrid")
 
-plt.figure(figsize=(8,8), dpi=300)
+plt.figure(figsize=(8, 8), dpi=300)
 
-bar1 = sns.barplot(x="discovery_year", y="RE+RR+TR", data=discovery_rate_classes[['RE+RR+TR']].reset_index(), estimator=sum, color='darkblue', dodge=False)
-bar2 = sns.barplot(x="discovery_year", y="TU+U", data=discovery_rate_classes[['TU+U']].reset_index(), estimator=sum, color='lightseagreen', dodge=False)
+bar0 = sns.barplot(x="discovery_year", y="RR+TR", data=discovery_rate_classes.reset_index(), color='darkblue', dodge=False)
+bar1 = sns.barplot(x="discovery_year", y="TU+U", data=discovery_rate_classes.reset_index(), color='lightseagreen', dodge=False)
+bar2 = sns.barplot(x="discovery_year", y="RE", data=discovery_rate_classes.reset_index(), color='tomato', dodge=False)
 
 # add legend
 x_ticks = np.arange(len(discovery_rate_classes.index), step=15)
 x_labels = discovery_rate_classes.index[x_ticks]
 
-top_bar = mpatches.Patch(color='darkblue', label='RE+RR+TR')
+top_bar0 = mpatches.Patch(color='tomato', label='RE')
+top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
 bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
-plt.legend(handles=[top_bar, bottom_bar])
+plt.legend(handles=[top_bar0, top_bar, bottom_bar])
 
 plt.xticks(x_ticks, np.array(x_labels, dtype=int), rotation=45)
 
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
 
-plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.eps", dpi=300, format='eps')
+plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, format='jpeg')
+
+plt.close()
+
+# same but show sum of minerals
+sns.set_context("paper")
+ax1 = sns.set(style="white")
+
+fig, ax1 = plt.subplots(figsize=(8, 8), dpi=300)
+
+temp = sns.histplot(
+    mindat_rruff,
+    x='discovery_year',
+    hue='rarity',
+    multiple='stack',
+    palette=['darkblue', 'lightseagreen', 'tomato'],
+    # Add white borders to the bars.
+    edgecolor='white',
+    # kde=True,
+    # Shrink the bars a bit so they don't touch.
+    shrink=0.5,
+    binwidth=1,
+    ax=ax1,
+    legend=False
+)
+
+ax1.set(xlim=(1750, 2021))
+
+ax2 = ax1.twinx()
+
+sns.kdeplot(data=mindat_rruff, x="discovery_year", hue="rarity", palette=['darkblue', 'lightseagreen', 'tomato'], ax=ax2,
+            legend=False)
+
+plt.xlabel('Discovery Year')
+plt.ylabel('Minerals count')
+
+top_bar0 = mpatches.Patch(color='tomato', label='RE')
+top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
+bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
+plt.legend(handles=[top_bar0, top_bar, bottom_bar])
+
+plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
