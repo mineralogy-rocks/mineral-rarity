@@ -482,7 +482,7 @@ plt.close()
 
 
 ## Spring layout
-_initial_data = r_el_vector.reset_index(drop=True).copy()
+_initial_data = re_true_el_vector.reset_index(drop=True).copy()
 _initial_data = _initial_data.groupby([0,1]).size().to_frame(name='size').reset_index()
 _initial_data['width'] = (_initial_data['size'] - _initial_data['size'].min())/(_initial_data['size'].max()-_initial_data['size'].min())
 
@@ -545,8 +545,10 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-elements_ = ['La', 'Ca', 'F', 'Ti', 'Mg', 'Zr', 'Nd', 'H', 'B', 'C', 'Fe', 'O', 'Ba', 'Cs', 'K', 'Sc', 'Na', 'Th', 'Yb', 'Ce', 'REE', 'Al', 'P', 'Li', 'Y', 'Sr', 'Be', 'Nb', 'Ta', 'Si', 'Mn']
-initial_data = re_rr_tr_el
+# 'La', 'Ca', 'F', 'Ti', 'Mg', 'Zr', 'Nd', 'H', 'B', 'C', 'Fe', 'O', 'Ba', 'Cs', 'K', 'Sc', 'Na', 'Th', 'Yb', 'Ce', 'REE', 'Al', 'P', 'Li', 'Y', 'Sr', 'Be', 'Nb', 'Ta', 'Si', 'Mn'
+# 'Co', 'I', 'As', 'Pb', 'Hg', 'Sn', 'In', 'Ru', 'Cu', 'Ag', 'Ga', 'Pd', 'Sb', 'Ir', 'S', 'Cd', 'Au', 'Zn', 'Cr', 'Ge', 'Pt', 'Rb', 'Mo', 'Ni', 'Bi', 'Cl', 'Tl', 'Rh', 'Se', 'N', 'V', 'U', 'Br', 'W', 'Te'
+elements_ = ['U', 'Th']
+initial_data = re_true_el
 exact = False
 
 minerals = initial_data.loc[initial_data['Elements'].isin(elements_)]
