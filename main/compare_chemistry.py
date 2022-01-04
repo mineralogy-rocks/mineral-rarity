@@ -6,10 +6,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import networkx as nx
+from networkx.algorithms.community.centrality import girvan_newman
+from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
-    get_mineral_clarks, get_ns_obj
+    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color, heaviest_edge
 
 # -*- coding: utf-8 -*-
 """
@@ -480,29 +482,60 @@ plt.close()
 
 
 ## Spring layout
-G = nx.from_pandas_edgelist(tu_u_el_vector, source=0, target=1)
+_initial_data = r_el_vector.reset_index(drop=True).copy()
+_initial_data = _initial_data.groupby([0,1]).size().to_frame(name='size').reset_index()
+_initial_data['width'] = (_initial_data['size'] - _initial_data['size'].min())/(_initial_data['size'].max()-_initial_data['size'].min())
+
+G = nx.from_pandas_edgelist(_initial_data, source=0, target=1, edge_attr=['size', 'width'])
+widths = [100 * n for n in  nx.get_edge_attributes(G, 'width').values()]
+
 degree_centrality = nx.centrality.degree_centrality(G)
 betweenness_centrality = nx.centrality.betweenness_centrality(G)
-closeness_centrality = nx.centrality.closeness_centrality(G)  # save results in a variable to use again
+closeness_centrality = nx.centrality.closeness_centrality(G)
 eigenvector_centrality = nx.centrality.eigenvector_centrality(G)
-pos = nx.spring_layout(G, iterations=15, seed=1721)
 
-node_size =  [v * 1000 for v in degree_centrality.values()]
-node_color =  [v * 10 for v in eigenvector_centrality.values()]
+pos = nx.spring_layout(G, seed=1700)
+
+# Community detection algorithms
+# communities = girvan_newman(G, most_valuable_edge=heaviest_edge)
+communities = greedy_modularity_communities(G, weight='size')
+set_node_community(G, communities)
+set_edge_community(G)
+node_color = [get_color(G.nodes[v]['community']) for v in G.nodes]
+
+external = [(v, w) for v, w in G.edges if G.edges[v, w]['community'] == 0]
+internal = [(v, w) for v, w in G.edges if G.edges[v, w]['community'] > 0]
+internal_color = ['black' for e in internal]
+
+
+node_size = [v * 1000 for v in degree_centrality.values()]
 plt.figure(figsize=(10, 9))
 plt.axis('off')
 
-nx.draw_networkx_nodes(G, pos, nodelist=G.nodes(), node_color=node_color, node_size=node_size, alpha=0.7, cmap=plt.cm.jet)
-nx.draw_networkx_edges(
+# Draw external edges
+nx.draw_networkx(
     G,
-    pos,
-    edgelist=G.edges(),
-    width=0.1,
-)
-nx.draw_networkx_labels(G, pos=pos,  font_size=10)
+    pos=pos,
+    node_size=node_size,
+    edgelist=external,
+    edge_color="silver",
+    linewidths=0.1,
+    font_size=10,
+    width=0.5)
+# Draw nodes and internal edges
+nx.draw_networkx(
+    G,
+    pos=pos,
+    node_color=node_color,
+    node_size=node_size,
+    edgelist=internal,
+    edge_color=internal_color,
+    linewidths=0.5,
+    font_size=10,
+    width=0.5)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/spring_network/tu_u_elements_eigenvector.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/spring_network/community/tu_u_GMC.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 ## test the degree centrality
@@ -512,8 +545,8 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-elements_ = ['Ag']
-initial_data = tu_u_el
+elements_ = ['La', 'Ca', 'F', 'Ti', 'Mg', 'Zr', 'Nd', 'H', 'B', 'C', 'Fe', 'O', 'Ba', 'Cs', 'K', 'Sc', 'Na', 'Th', 'Yb', 'Ce', 'REE', 'Al', 'P', 'Li', 'Y', 'Sr', 'Be', 'Nb', 'Ta', 'Si', 'Mn']
+initial_data = re_rr_tr_el
 exact = False
 
 minerals = initial_data.loc[initial_data['Elements'].isin(elements_)]
