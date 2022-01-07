@@ -6,12 +6,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import networkx as nx
-from networkx.algorithms.community.centrality import girvan_newman
 from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
-    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color, heaviest_edge
+    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color
 
 # -*- coding: utf-8 -*-
 """
@@ -545,9 +544,10 @@ plt.close()
 (sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
 
 ## analyse specific elements EXACT OR INEXACT MATCH
-# 'La', 'Ca', 'F', 'Ti', 'Mg', 'Zr', 'Nd', 'H', 'B', 'C', 'Fe', 'O', 'Ba', 'Cs', 'K', 'Sc', 'Na', 'Th', 'Yb', 'Ce', 'REE', 'Al', 'P', 'Li', 'Y', 'Sr', 'Be', 'Nb', 'Ta', 'Si', 'Mn'
-# 'Co', 'I', 'As', 'Pb', 'Hg', 'Sn', 'In', 'Ru', 'Cu', 'Ag', 'Ga', 'Pd', 'Sb', 'Ir', 'S', 'Cd', 'Au', 'Zn', 'Cr', 'Ge', 'Pt', 'Rb', 'Mo', 'Ni', 'Bi', 'Cl', 'Tl', 'Rh', 'Se', 'N', 'V', 'U', 'Br', 'W', 'Te'
-elements_ = ['U', 'Th']
+# 'Br', 'Te', 'Sn', 'Au', 'I', 'Se', 'W', 'Tl', 'Cu', 'Pd', 'Sb', 'S', 'Bi', 'Ga', 'Cs', 'Co', 'Ge', 'Ag', 'Pb', 'Cl', 'Rh', 'Hg', 'Cd', 'As', 'Ni', 'Cr', 'Ir', 'Mo'
+# 'Mn', 'Al', 'Ti', 'Ca', 'Zn', 'V', 'P', 'Ba', 'Fe', 'Be', 'H', 'O', 'Li', 'Mg', 'B', 'Na', 'Zr', 'Sr', 'Si', 'F', 'K', 'REE'
+
+elements_ = ['Br', 'Te', 'Sn', 'Au', 'I', 'Se', 'W', 'Tl', 'Cu', 'Pd', 'Sb', 'S', 'Bi', 'Ga', 'Cs', 'Co', 'Ge', 'Ag', 'Pb', 'Cl', 'Rh', 'Hg', 'Cd', 'As', 'Ni', 'Cr', 'Ir', 'Mo']
 initial_data = re_true_el
 exact = False
 
@@ -576,7 +576,7 @@ test_cooc = cooccurrence_r[['Br', 'I', 'Cl', 'Hg']]
 cooccurrence_tu_u[['Br', 'I']].describe()
 
 ### further analyse anions of these elements
-anions_to_check = ['OH']
+anions_to_check = ['OH', 'F']
 
 anions = pd.DataFrame(test['anions_theoretical'].str.split('; *?').explode(0))
 anions = anions.loc[anions['anions_theoretical'].isin(anions_to_check)].index.drop_duplicates()
