@@ -481,7 +481,7 @@ plt.close()
 
 
 ## Spring layout
-_initial_data = re_true_el_vector.reset_index(drop=True).copy()
+_initial_data = tu_u_el_vector.reset_index(drop=True).copy()
 _initial_data = _initial_data.groupby([0,1]).size().to_frame(name='size').reset_index()
 _initial_data['width'] = (_initial_data['size'] - _initial_data['size'].min())/(_initial_data['size'].max()-_initial_data['size'].min())
 
@@ -547,14 +547,16 @@ plt.close()
 # 'Br', 'Te', 'Sn', 'Au', 'I', 'Se', 'W', 'Tl', 'Cu', 'Pd', 'Sb', 'S', 'Bi', 'Ga', 'Cs', 'Co', 'Ge', 'Ag', 'Pb', 'Cl', 'Rh', 'Hg', 'Cd', 'As', 'Ni', 'Cr', 'Ir', 'Mo'
 # 'Mn', 'Al', 'Ti', 'Ca', 'Zn', 'V', 'P', 'Ba', 'Fe', 'Be', 'H', 'O', 'Li', 'Mg', 'B', 'Na', 'Zr', 'Sr', 'Si', 'F', 'K', 'REE'
 
-elements_ = ['Br', 'Te', 'Sn', 'Au', 'I', 'Se', 'W', 'Tl', 'Cu', 'Pd', 'Sb', 'S', 'Bi', 'Ga', 'Cs', 'Co', 'Ge', 'Ag', 'Pb', 'Cl', 'Rh', 'Hg', 'Cd', 'As', 'Ni', 'Cr', 'Ir', 'Mo']
-initial_data = re_true_el
+# when employing network community analysis we have to subset minerals to those where only these elements occur
+elements_include = ['Cs']
+initial_data = re_rr_tr_el
 exact = False
 
-minerals = initial_data.loc[initial_data['Elements'].isin(elements_)]
+minerals = initial_data.loc[initial_data['Elements'].isin(elements_include)]
+minerals = initial_data.loc[initial_data['Elements'].isin(elements_include)]
 minerals['count'] = minerals.groupby(minerals.index).count()
 if exact:
-    minerals = minerals.loc[minerals['count'] == len(elements_)]
+    minerals = minerals.loc[minerals['count'] == len(elements_include)]
 minerals = minerals.index
 # minerals = tu_u_el.index
 test = mr_data.loc[minerals].drop_duplicates()
