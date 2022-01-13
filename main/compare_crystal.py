@@ -66,6 +66,12 @@ plt.close()
 (pie_.loc['isometric', 0] + pie_.loc['hexagonal', 0] + pie_.loc['trigonal', 0] + pie_.loc['tetragonal', 0]) \
 / (pie_.loc['triclinic', 0] + pie_.loc['monoclinic', 0] + pie_.loc['orthorhombic', 0])
 
+# calculate symmetry index yearly
+
+mr_data.groupby('discovery_year').agg(
+    isometric=pd.NamedAgg(column="isometric", aggfunc="sum"),
+    triclinic=pd.NamedAgg(column="triclinic", aggfunc="sum"),
+)
 
 # calculate "triclinic" index yearly
 
