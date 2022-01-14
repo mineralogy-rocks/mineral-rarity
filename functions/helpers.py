@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from operator import itemgetter
-
 from sklearn.preprocessing import StandardScaler
 
 # -*- coding: utf-8 -*-
@@ -109,6 +108,7 @@ def parse_mindat(data):
 
     return locs_md
 
+
 def get_discovery_rate_all(data, min_year=1500):
     """ Get all minerals counts grouped by the discovery year (all from MR)"""
 
@@ -147,6 +147,7 @@ def get_endemic_proportion(discovery_rate_endemic, discovery_rate_all):
     endemic_all_prop['proportion'] = endemic_all_prop['count_endemic'] / endemic_all_prop['count_all'] * 100
 
     return endemic_all_prop
+
 
 def calculate_cooccurrence_matrix(data0, data1, norm=False):
     cooccurrence = pd.crosstab(data0, data1, normalize=norm)
@@ -189,6 +190,7 @@ def get_mineral_clarks(data):
     data_el_spread = pd.DataFrame(data_el.groupby('Elements').size().sort_values(), columns=['abundance'])
 
     return data_el, data_el_spread
+
 
 def get_ns_obj():
     return pd.DataFrame([
@@ -235,6 +237,7 @@ def set_edge_community(G):
             # External edge, mark as 0
             G.edges[v, w]['community'] = 0
 
+
 def get_color(i, r_off=1, g_off=1, b_off=1):
     '''Assign a color to a vertex.'''
     r0, g0, b0 = 0, 0, 0
@@ -250,3 +253,64 @@ def get_color(i, r_off=1, g_off=1, b_off=1):
 def heaviest_edge(G):
     u, v, w = max(G.edges(data="size"), key=itemgetter(2))
     return (u, v)
+
+
+def prepare_data(ns, crystal):
+    locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
+    rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
+
+    rruff_data = parse_rruff(rruff_data)
+    locs_md = parse_mindat(locs_md)
+
+    # Clean and transform MR data
+    ns.set_index('Mineral_Name', inplace=True)
+    crystal.set_index('Mineral_Name', inplace=True)
+
+    mindat_rruff = locs_md.join(rruff_data, how='outer')
+    mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
+
+    # create final subset for the analysis
+    mr_data = ns.join(mindat_rruff, how='inner')
+    mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
+    mr_data.loc[mr_data['Crystal System'].isin(['icosahedral', 'amorphous']), 'Crystal System'] = np.nan
+
+    return mr_data
+
+
+def get_symmetry_indexes(data):
+
+    data.loc[:, 'triclinic'] = 0
+    data.loc[:, 'isometric'] = 0
+    data.loc[:, 'hexagonal'] = 0
+    data.loc[:, 'trigonal'] = 0
+    data.loc[:, 'orthorhombic'] = 0
+    data.loc[:, 'monoclinic'] = 0
+    data.loc[:, 'tetragonal'] = 0
+    data.loc[data['Crystal System'] == 'triclinic', 'triclinic'] = 1
+    data.loc[data['Crystal System'] == 'isometric', 'isometric'] = 1
+    data.loc[data['Crystal System'] == 'hexagonal', 'hexagonal'] = 1
+    data.loc[data['Crystal System'] == 'trigonal', 'trigonal'] = 1
+    data.loc[data['Crystal System'] == 'orthorhombic', 'orthorhombic'] = 1
+    data.loc[data['Crystal System'] == 'monoclinic', 'monoclinic'] = 1
+    data.loc[data['Crystal System'] == 'tetragonal', 'tetragonal'] = 1
+
+    discovery_rate = data.sort_values('discovery_year', ascending=True)
+
+    discovery_rate = discovery_rate.groupby('discovery_year').agg(
+        isometric=pd.NamedAgg(column="isometric", aggfunc="sum"),
+        triclinic=pd.NamedAgg(column="triclinic", aggfunc="sum"),
+        hexagonal=pd.NamedAgg(column="hexagonal", aggfunc="sum"),
+        trigonal=pd.NamedAgg(column="trigonal", aggfunc="sum"),
+        orthorhombic=pd.NamedAgg(column="orthorhombic", aggfunc="sum"),
+        monoclinic=pd.NamedAgg(column="monoclinic", aggfunc="sum"),
+        tetragonal=pd.NamedAgg(column="tetragonal", aggfunc="sum"),
+    )
+
+    discovery_rate['triclinic_index'] = discovery_rate['triclinic'] / discovery_rate['isometric']
+    discovery_rate['symmetry_index'] = (discovery_rate['isometric'] + discovery_rate['hexagonal'] + discovery_rate[
+        'trigonal'] +
+                                        discovery_rate['tetragonal']) \
+                                       / (discovery_rate['triclinic'] + discovery_rate['monoclinic'] + discovery_rate[
+        'orthorhombic'])
+
+    return discovery_rate

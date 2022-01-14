@@ -10,7 +10,8 @@ from networkx.algorithms.community.modularity_max import greedy_modularity_commu
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
-    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color
+    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color, prepare_data, \
+    get_symmetry_indexes
 
 # -*- coding: utf-8 -*-
 """
@@ -22,32 +23,17 @@ GsheetApi = GsheetApi()
 GsheetApi.run_main()
 
 ns = GsheetApi.nickel_strunz.copy()
-
-locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
-rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
-
-rruff_data = parse_rruff(rruff_data)
-locs_md = parse_mindat(locs_md)
+crystal = GsheetApi.crystal.copy()
 
 elements = pd.read_csv('data/elements_data.csv', sep=',')
 elements.set_index('element', inplace=True)
 
-# Clean and transform MR data
-ns.set_index('Mineral_Name', inplace=True)
-
 ns_object = get_ns_obj()
 
-mindat_rruff = locs_md.join(rruff_data, how='outer')
-mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
-
-# create final subset for the analysis
-mr_data = ns.join(mindat_rruff, how='inner')
-
+mr_data = prepare_data(ns, crystal)
 r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u = split_by_rarity_groups(mr_data)
 
 ##### RE MINERALS  #####
-
-
 tu_u.loc[tu_u['discovery_year'] >= 1950]
 re_true.loc[re_true['discovery_year'] < 1950]
 re_rr_tr.loc[re_rr_tr['discovery_year'] >= 1950]
@@ -64,12 +50,6 @@ tr.loc[tr['discovery_year'] >= 1950].groupby('CLASS').size()
 # further analytics
 re.loc[(re['CLASS'] == 'Elements') & (re['locality_counts'] == 1)]
 re_true.loc[(re_true['CLASS'] == 'Elements') & (re_true['locality_counts'] == 1)]
-
-# Analyse carbides
-carbon_minerals = mr_data[mr_data['Formula'].str.contains(r'C(?![a-z])') == True]
-carbon_minerals_re = carbon_minerals.loc[carbon_minerals['locality_counts'] == 1]
-carbon_minerals_re.loc[carbon_minerals_re['CLASS'] == 'Elements']
-carbon_minerals_re.groupby('CLASS').size()
 
 # during all periods
 RE = pd.DataFrame(re.groupby('CLASS').size(), columns=['RE'])

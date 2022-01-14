@@ -1,12 +1,11 @@
 import pandas as pd
-import numpy as np
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import parse_rruff, parse_mindat, split_by_rarity_groups, get_crystal_system_obj
+from functions.helpers import split_by_rarity_groups, get_crystal_system_obj, prepare_data, get_symmetry_indexes
 
 # -*- coding: utf-8 -*-
 """
@@ -21,30 +20,12 @@ GsheetApi.run_main()
 ns = GsheetApi.nickel_strunz.copy()
 crystal = GsheetApi.crystal.copy()
 
-locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
-rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
-
-rruff_data = parse_rruff(rruff_data)
-locs_md = parse_mindat(locs_md)
-
-# Clean and transform MR data
-ns.set_index('Mineral_Name', inplace=True)
-crystal.set_index('Mineral_Name', inplace=True)
-
-mindat_rruff = locs_md.join(rruff_data, how='outer')
-mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
-
-# create final subset for the analysis
-mr_data = ns.join(mindat_rruff, how='inner')
-mr_data = mr_data.join(crystal[['Crystal System']], how='inner')
-mr_data.loc[mr_data['Crystal System'].isin(['icosahedral', 'amorphous']), 'Crystal System'] = np.nan
+mr_data = prepare_crystal_data(ns, crystal)
 
 # create Crystal System helper object
-
 crystal_system = get_crystal_system_obj()
 
 r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u = split_by_rarity_groups(mr_data)
-
 
 # Pie chart: Crystal classes for RE
 
@@ -68,26 +49,5 @@ plt.close()
 
 # calculate symmetry index yearly
 
-mr_data.groupby('discovery_year').agg(
-    isometric=pd.NamedAgg(column="isometric", aggfunc="sum"),
-    triclinic=pd.NamedAgg(column="triclinic", aggfunc="sum"),
-)
-
-# calculate "triclinic" index yearly
-
 discovery_rate = mr_data.loc[mr_data['discovery_year'].notna()]
-
-discovery_rate.loc[:,'triclinic'] = 0
-discovery_rate.loc[:,'isometric'] = 0
-discovery_rate.loc[discovery_rate['Crystal System'] == 'triclinic', 'triclinic'] = 1
-discovery_rate.loc[discovery_rate['Crystal System'] == 'isometric', 'isometric'] = 1
-
-discovery_rate = discovery_rate.sort_values('discovery_year', ascending=True)
-
-discovery_rate = discovery_rate.groupby('discovery_year').agg(
-    isometric=pd.NamedAgg(column="isometric", aggfunc="sum"),
-    triclinic=pd.NamedAgg(column="triclinic", aggfunc="sum"),
-)
-
-discovery_rate['triclinic_index'] = discovery_rate['triclinic'] / discovery_rate['isometric']
-
+discovery_rate = get_symmetry_indexes(discovery_rate)
