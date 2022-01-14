@@ -52,7 +52,7 @@ endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_ra
 discovery_rate_all['count_cumulative'] = discovery_rate_all.cumsum()
 discovery_rate_all = discovery_rate_all.loc[discovery_rate_all.index >= 1800]
 
-discovery_rate = discovery_rate_all.join(endemic_proportion, how='outer')
+discovery_rate = discovery_rate_all.join(endemic_proportion, how='left')
 discovery_rate = discovery_rate.join(symmetry_rate[['triclinic_index', 'symmetry_index']], how='left')
 
 
@@ -120,8 +120,13 @@ ax3 = ax1.twinx()
 sns.kdeplot(data=mindat_rruff, x="discovery_year", hue="rarity", palette=['darkblue', 'lightseagreen', 'tomato'], ax=ax2,
             legend=False)
 
-temp_ = discovery_rate.reset_index()
-sns.lineplot(data=temp_, x="discovery_year", y='symmetry_index', ax=ax3, legend=False)
+temp_ = discovery_rate.reset_index().dropna(subset=['symmetry_index'])
+temp_.loc[temp_['symmetry_index'] == np.inf, 'symmetry_index'] = 0
+# sns.lineplot(data=temp_, x="discovery_year", y='symmetry_index', color='red', ax=ax3, legend=False, linewidth=1,
+#              linestyle='--')
+
+sns.kdeplot(data=temp_, x="discovery_year", weights='symmetry_index', ax=ax2, fill=False, color="red", alpha=.3,
+            linewidth=1, legend=False)
 
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
@@ -129,7 +134,8 @@ plt.ylabel('Minerals count')
 top_bar0 = mpatches.Patch(color='tomato', label='RE')
 top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
 bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
-plt.legend(handles=[top_bar0, top_bar, bottom_bar])
+bottom_bar1 = mpatches.Patch(color='red', label='symmetry index')
+plt.legend(handles=[top_bar0, top_bar, bottom_bar, bottom_bar1])
 
 plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, format='jpeg')
 plt.close()
