@@ -144,7 +144,7 @@ def get_endemic_proportion(discovery_rate_endemic, discovery_rate_all):
 
     endemic_all_prop = discovery_rate_endemic.join(discovery_rate_all, how='inner', lsuffix='_endemic', rsuffix='_all')
 
-    endemic_all_prop['proportion'] = endemic_all_prop['count_endemic'] / endemic_all_prop['count_all'] * 100
+    endemic_all_prop['proportion'] = endemic_all_prop['count_endemic'] / endemic_all_prop['count_all']
 
     return endemic_all_prop
 
@@ -277,7 +277,9 @@ def prepare_data(ns, crystal):
     return mr_data
 
 
-def get_symmetry_indexes(data):
+def get_symmetry_indexes(initial_data):
+
+    data = initial_data.copy()
 
     data.loc[:, 'triclinic'] = 0
     data.loc[:, 'isometric'] = 0

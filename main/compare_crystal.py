@@ -20,7 +20,7 @@ GsheetApi.run_main()
 ns = GsheetApi.nickel_strunz.copy()
 crystal = GsheetApi.crystal.copy()
 
-mr_data = prepare_crystal_data(ns, crystal)
+mr_data = prepare_data(ns, crystal)
 
 # create Crystal System helper object
 crystal_system = get_crystal_system_obj()

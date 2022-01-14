@@ -10,69 +10,41 @@ import seaborn as sns
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import get_discovery_rate_all, get_discovery_rate_endemic, get_endemic_proportion, parse_rruff, \
-    parse_mindat
+    parse_mindat, prepare_data, get_symmetry_indexes
 
 # -*- coding: utf-8 -*-
 """
 @author: Liubomyr Gavryliv
-Code for assessing the evolution of mineral endemicity with time and
-make some assumptions
+Code for assessing the evolution of mineral endemicity with time and the discovery rate and make some assumptions
 """
 
 GsheetApi = GsheetApi()
 GsheetApi.run_main()
 
-locs_mr = GsheetApi.locs.copy()
-discovery_year = GsheetApi.names.copy()
-status = GsheetApi.status_data.copy()
+ns = GsheetApi.nickel_strunz.copy()
+crystal = GsheetApi.crystal.copy()
+
+mr_data = prepare_data(ns, crystal)
 
 locs_md = pd.read_csv('data/mindat_locs.csv', sep=',')
 rruff_data = pd.read_csv('data/RRUFF_Export.csv', sep=',')
-
 rruff_data = parse_rruff(rruff_data)
 locs_md = parse_mindat(locs_md)
 
-
-# Clean and transform MR data
-locs_mr.set_index('mineral_name', inplace=True)
-status.set_index('Mineral_Name', inplace=True)
-discovery_year.set_index('Mineral_Name', inplace=True)
-discovery_year['discovery_year_min'] = pd.to_numeric(discovery_year['discovery_year_min'])
-
-locs_mr = locs_mr.join(discovery_year, how='inner')[['locality_counts', 'discovery_year_min']]
-
-locs_mr.join(status)
-
-locs_mr['locality_counts'] = pd.to_numeric(locs_mr['locality_counts'])
-
-discovery_year.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
-locs_mr.rename(columns={ 'discovery_year_min': 'discovery_year' }, inplace=True)
-
-## Get all minerals counts grouped by the discovery year (all from MR)
-
-discovery_rate_all = get_discovery_rate_all(discovery_year)
-discovery_rate_endemic = get_discovery_rate_endemic(locs_mr)
-endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
-
 # Use mindat localities and RRUFF discovery year
-
 mindat_rruff = locs_md.join(rruff_data, how='outer')
-
 mindat_rruff = mindat_rruff[['discovery_year', 'locality_counts']]
-
-# get proportions of rare and endemic minerals
-endemic = mindat_rruff.loc[(mindat_rruff['locality_counts'] == 1)]
-endemic.sort_values(by='discovery_year', inplace=True)
-
-mindat_rruff.loc[(mindat_rruff['locality_counts'] >= 2) & (mindat_rruff['locality_counts'] <= 4)]
-
+mindat_rruff = mindat_rruff.join(mr_data['Crystal System'], how='left')
 mindat_rruff.loc[mindat_rruff['locality_counts'].isna(), 'locality_counts'] = 1.0
+
+symmetry_rate = get_symmetry_indexes(mindat_rruff)
+
+# get basic stats
 len(mindat_rruff.loc[(mindat_rruff['locality_counts'] > 18)]) / len(mindat_rruff) * 100
 len(mindat_rruff.loc[(mindat_rruff['locality_counts'] <= 18) & (mindat_rruff['locality_counts'] >= 5)]) / len(mindat_rruff) * 100
 len(mindat_rruff.loc[(mindat_rruff['locality_counts'] <= 4) ]) / len(mindat_rruff) * 100
 
 ## Get discovery rates (localities from mindat, discovery year from RRUFF)
-
 discovery_rate_all = get_discovery_rate_all(mindat_rruff)
 discovery_rate_endemic = get_discovery_rate_endemic(mindat_rruff)
 endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_rate_all)
@@ -80,13 +52,16 @@ endemic_proportion = get_endemic_proportion(discovery_rate_endemic, discovery_ra
 discovery_rate_all['count_cumulative'] = discovery_rate_all.cumsum()
 discovery_rate_all = discovery_rate_all.loc[discovery_rate_all.index >= 1800]
 
+discovery_rate = discovery_rate_all.join(endemic_proportion, how='outer')
+discovery_rate = discovery_rate.join(symmetry_rate[['triclinic_index', 'symmetry_index']], how='left')
+
 
 ### split discovery rate into Rarity groups
 mindat_rruff.loc[(mindat_rruff['locality_counts'] > 1) & (mindat_rruff['locality_counts'] <= 16), 'rarity'] = 'RR + TR'
 mindat_rruff.loc[mindat_rruff['locality_counts'] > 16, 'rarity'] = 'TU + U'
 mindat_rruff.loc[mindat_rruff['locality_counts'] == 1, 'rarity'] = 'RE'
 
-discovery_rate_classes = mindat_rruff.groupby(['discovery_year','rarity']).count().unstack()
+discovery_rate_classes = mindat_rruff.groupby(['discovery_year','rarity'])[['rarity']].count().unstack()
 discovery_rate_classes.columns = ['RE', 'RR+TR', 'TU+U']
 
 # stacked bar chart of discovery rate vs rarity groups
@@ -108,13 +83,12 @@ bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
 plt.legend(handles=[top_bar0, top_bar, bottom_bar])
 
 plt.xticks(x_ticks, np.array(x_labels, dtype=int), rotation=45)
-
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
 
 plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, format='jpeg')
-
 plt.close()
+
 
 # same but show sum of minerals
 sns.set_context("paper")
@@ -141,9 +115,13 @@ temp = sns.histplot(
 ax1.set(xlim=(1750, 2021))
 
 ax2 = ax1.twinx()
+ax3 = ax1.twinx()
 
 sns.kdeplot(data=mindat_rruff, x="discovery_year", hue="rarity", palette=['darkblue', 'lightseagreen', 'tomato'], ax=ax2,
             legend=False)
+
+temp_ = discovery_rate.reset_index()
+sns.lineplot(data=temp_, x="discovery_year", y='symmetry_index', ax=ax3, legend=False)
 
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
@@ -154,72 +132,77 @@ bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
 plt.legend(handles=[top_bar0, top_bar, bottom_bar])
 
 plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, format='jpeg')
+plt.close()
 
+
+# symmetry index with endemicity index
+sns.set(style="darkgrid")
+
+plt.figure(figsize=(8, 8), dpi=300)
+
+sns.lineplot(data=discovery_rate, x=discovery_rate.index, y=discovery_rate.symmetry_index, palette="tab10", linewidth=1)
+sns.lineplot(data=discovery_rate, x=discovery_rate.index, y=discovery_rate.proportion, palette="tab10", linewidth=1)
+
+plt.savefig(f"figures/discovery_rate/symmetry_index.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
 # bar chart of discovery rate of all minerals between 1800 and 2021
+y_pos = np.arange(len(discovery_rate.index))
+x_ticks = np.arange(len(discovery_rate.index), step=15)
+x_labels = discovery_rate.index[x_ticks]
 
-y_pos = np.arange(len(discovery_rate_all.index))
-x_ticks = np.arange(len(discovery_rate_all.index), step=15)
-x_labels = discovery_rate_all.index[x_ticks]
-
-plt.bar(y_pos, discovery_rate_all['count'])
+plt.bar(y_pos, discovery_rate['count'])
 
 plt.xticks(x_ticks, np.array(x_labels, dtype=int), rotation=45)
-
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
 plt.title('Discovery rate of minerals')
 
 plt.savefig(f"figures/discovery_rate/all.jpeg", dpi=300, format='jpeg')
-
 plt.close()
 
 
 # cumulative curve of discovery rate for all minerals
-
-plt.plot(discovery_rate_all.index, discovery_rate_all[['count_cumulative']], color='red', linestyle='dotted', linewidth=1)
+plt.plot(discovery_rate.index, discovery_rate[['count_cumulative']], color='red', linestyle='dotted', linewidth=1)
 
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
 plt.title('Discovery rate of minerals')
 
-plt.savefig(f"figures/all_minerals/discovery_rate_cumulative.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/discovery_rate/all_cumulative.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
 
 # scatter plot of endemic mineral counts / discovery year
 
-plt.scatter(discovery_rate_endemic.index, discovery_rate_endemic['count'], color='#5FD6D1', marker='o', s=20,
+plt.scatter(discovery_rate.index, discovery_rate['count_endemic'], color='#5FD6D1', marker='o', s=20,
             edgecolors='black', linewidths=0.1)
 
 plt.xlabel('Discovery Year')
 plt.ylabel('Endemic minerals count')
 plt.title('Discovery rate of endemic minerals')
 
-plt.savefig(f"figures/endemic_minerals/discovery_rate_scatter.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/discovery_rate/endemic_scatter.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
 
 # bar chart of discovery rate of endemic minerals only
 
-y_pos = np.arange(len(discovery_rate_endemic.index))
-x_ticks = np.arange(len(discovery_rate_endemic.index), step=15)
-x_labels = discovery_rate_endemic.index[x_ticks]
+y_pos = np.arange(len(discovery_rate.index))
+x_ticks = np.arange(len(discovery_rate.index), step=15)
+x_labels = discovery_rate.index[x_ticks]
 
-plt.bar(y_pos, discovery_rate_endemic['count'])
+plt.bar(y_pos, discovery_rate['count_endemic'])
 
 plt.xticks(x_ticks, np.array(x_labels, dtype=int), rotation=45)
-
 plt.xlabel('Discovery Year')
 plt.ylabel('Minerals count')
 plt.title('Discovery rate of minerals')
 
-plt.savefig(f"figures/endemic_minerals/discovery_rate_bar.jpeg", dpi=300, format='jpeg')
-
+plt.savefig(f"figures/discovery_rate/endemic_bar.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
