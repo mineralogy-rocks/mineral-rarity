@@ -528,8 +528,8 @@ plt.close()
 # 'Mn', 'Al', 'Ti', 'Ca', 'Zn', 'V', 'P', 'Ba', 'Fe', 'Be', 'H', 'O', 'Li', 'Mg', 'B', 'Na', 'Zr', 'Sr', 'Si', 'F', 'K', 'REE'
 
 # when employing network community analysis we have to subset minerals to those where only these elements occur
-elements_include = ['Cs']
-initial_data = re_rr_tr_el
+elements_include = ['Be']
+initial_data = tu_u_el
 exact = False
 
 minerals = initial_data.loc[initial_data['Elements'].isin(elements_include)]

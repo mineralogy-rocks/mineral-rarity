@@ -8,6 +8,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = 'Arial'
+import seaborn as sns
 
 from modules.gsheet_api import GsheetApi
 from functions.helpers import Scaler, transform_data
@@ -34,57 +37,30 @@ raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d = tra
 
 
 # Original non-scaled data scatter-plot
-
-plt.scatter(raw_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='#5FD6D1', marker='o', s=20,
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
+plt.scatter(raw_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='#5FD6D1', marker='o', s=25,
             edgecolors='black', linewidths=0.1)
 
 plt.xlabel('Locality count')
 plt.ylabel('Mineral count')
-plt.title('Mineral - Locality pairs')
 
-plt.savefig(f"figures/mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/general/mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
 
 plt.close()
 
 
 # Log-transformed data scatter-plot
-
-plt.scatter(log_locality_mineral_pairs['locality_counts'], log_locality_mineral_pairs['mineral_count'], color='#5FD6D1', marker='o', s=20,
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
+plt.scatter(log_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='#5FD6D1', marker='o', s=25,
             edgecolors='black', linewidths=0.1)
 
-plt.xlabel('Log (Locality count)')
-plt.ylabel('Log (Mineral count)')
-plt.title('Mineral - Locality pairs')
-
-plt.savefig(f"figures/log_mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
-
-plt.close()
-
-
-# Original non-scaled locality counts histogram
-
-plt.hist(raw_locality_mineral_pairs['locality_counts'], bins=1000)
-
-plt.xlabel('Locality count')
+plt.xlabel('Log (locality count)')
 plt.ylabel('Mineral count')
-plt.title('Mineral - Locality pairs')
 
-plt.savefig(f"figures/raw_locality_counts_histogram.jpeg", dpi=300, format='jpeg')
-
-plt.close()
-
-
-# Standardized and Scaled locality counts histogram
-
-plt.hist(scaled_locality_1d, bins=1000)
-
-plt.xlabel('Locality count')
-plt.ylabel('Mineral count')
-plt.title('Mineral - Locality pairs')
-
-plt.savefig(f"figures/scaled_locality_counts_histogram.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/general/log_mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
 
 plt.close()
+
 
 # Find optimum number of clusters for k-Means
 
@@ -100,12 +76,12 @@ for n_clusters in N_CLUSTERS:
     sum_of_squared_distances.append(km.inertia_)
 
 
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 plt.plot(N_CLUSTERS, sum_of_squared_distances, color='green', marker='o',
          linestyle='solid', linewidth=1, markersize=2)
 
 plt.xlabel('Number of clusters')
 plt.ylabel('Sum of squared distances')
-plt.title('Elbow Method For Optimal Number of Clusters')
 
 plt.savefig("figures/k-means/elbow_n_clusters.jpeg", dpi=300, format='jpeg')
 

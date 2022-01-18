@@ -5,8 +5,6 @@ import pandas as pd
 
 
 GsheetApi = GsheetApi()
-
-
 GsheetApi.run_main()
 
 # Trace history of mineral localities changes

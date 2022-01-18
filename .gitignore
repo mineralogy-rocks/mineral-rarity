@@ -2,3 +2,4 @@
 /venv
 gsheets_credentials.json
 functions/__pycache__/
+/data/

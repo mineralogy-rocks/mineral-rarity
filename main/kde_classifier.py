@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
-
 from scipy.stats import norm
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+import matplotlib.cm as cm
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = 'Arial'
+import seaborn as sns
 from sklearn.neighbors import KernelDensity
 from scipy.signal import argrelextrema
 
@@ -77,7 +79,8 @@ plt.savefig(f"figures/kde/classification_output.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
-## Kernel Density Estimate (epanechnikov) on 1-d data with different bandwidths
+
+## Kernel Density Estimate (epanechnikov) on 1-d data with different bandwidths using Sci-kit and Mpl
 
 N = len(locs)
 
@@ -86,33 +89,26 @@ x_min, x_max = scaled_locality_1d.min(), scaled_locality_1d.max()
 
 X_plot = np.linspace(x_min - 1, x_max + 1, 1000)[:, np.newaxis]
 
-true_dens = 0.3 * norm(0, 1).pdf(X_plot[:, 0]) + 0.7 * norm(10, 1).pdf(X_plot[:, 0])
+true_dens = 0.3 * norm(0, 1).pdf(X_plot[:, 0]) + 0.7 * norm(100, 1).pdf(X_plot[:, 0])
 
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 fig, ax = plt.subplots()
-ax.fill(X_plot[:, 0], true_dens, fc="black", alpha=0.2, label="input distribution")
+sns.kdeplot(x=X_plot[:, 0], y=true_dens, fill=True, color='red', common_norm=True)
 colors = ['black', 'blue', 'darkorange', 'brown']
 
-for index, bandwidth in enumerate(np.arange(0.2, 0.6, 0.1)):
+for index, bandwidth in enumerate(np.arange(0.3, 0.9, 0.2)):
     kde = KernelDensity(kernel='epanechnikov', bandwidth=bandwidth).fit(X)
     log_dens = kde.score_samples(X_plot)
-    ax.plot(
-        X_plot[:, 0],
-        np.exp(log_dens),
-        color=colors[index],
-        lw=0.8,
-        linestyle="--",
-        label="KDE with bandwidth = {}".format(round(bandwidth, 2)),
-    )
-
-ax.text(4, 0.44, "N={0} points".format(N))
+    sns.lineplot(x=X_plot[:, 0], y=np.exp(log_dens), color=colors[index], markers=True,
+                 label="Bandwidth = {}".format(round(bandwidth, 2)), lw=0.7)
 
 ax.legend(loc="upper right")
-ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "|k")
-
+plt.xlabel('Standardized and scaled locality counts')
+plt.ylabel('Density')
 
 plt.savefig(f"figures/kde/classification_output_n_bandwidth.jpeg", dpi=300, format='jpeg')
-
 plt.close()
+
 
 
 ## Get decision boundaries
