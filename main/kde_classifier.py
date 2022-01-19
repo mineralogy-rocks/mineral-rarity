@@ -5,7 +5,6 @@ from scipy.stats import norm
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'Arial'
 import seaborn as sns
@@ -104,7 +103,7 @@ for index, bandwidth in enumerate(np.arange(0.3, 0.9, 0.2)):
 
 ax.legend(loc="upper right")
 plt.xlabel('Standardized and scaled locality counts')
-plt.ylabel('Density')
+plt.ylabel('Probability density')
 
 plt.savefig(f"figures/kde/classification_output_n_bandwidth.jpeg", dpi=300, format='jpeg')
 plt.close()

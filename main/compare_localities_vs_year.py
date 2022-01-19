@@ -5,7 +5,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-plt.rcParams["font.family"] = "Arial"
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = 'Arial'
 import seaborn as sns
 
 from modules.gsheet_api import GsheetApi
@@ -90,7 +91,7 @@ plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, f
 plt.close()
 
 
-# same but show sum of minerals
+# stacked bar chart of rarity groups discovery rate and with KDEs
 sns.set_context("paper")
 ax1 = sns.set(style="white")
 
@@ -137,8 +138,41 @@ bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
 bottom_bar1 = mpatches.Patch(color='red', label='symmetry index')
 plt.legend(handles=[top_bar0, top_bar, bottom_bar, bottom_bar1])
 
+plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups_kdes.jpeg", dpi=300, format='jpeg')
+plt.close()
+
+
+# stacked bar chart of rarity groups discovery rate
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
+fig, ax1 = plt.subplots(figsize=(8, 8), dpi=300)
+
+temp = sns.histplot(
+    mindat_rruff,
+    x='discovery_year',
+    hue='rarity',
+    multiple='stack',
+    palette=['darkblue', 'lightseagreen', 'tomato'],
+    edgecolor='white',
+    shrink=0.5,
+    binwidth=1,
+    ax=ax1,
+    legend=False
+)
+
+ax1.set(xlim=(1750, 2021))
+
+plt.xlabel('Discovery Year')
+plt.ylabel('Minerals count')
+
+top_bar0 = mpatches.Patch(color='tomato', label='RE')
+top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
+bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
+
+plt.legend(handles=[top_bar0, top_bar, bottom_bar])
+
 plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups.jpeg", dpi=300, format='jpeg')
 plt.close()
+
 
 
 # symmetry index with endemicity index
@@ -182,13 +216,14 @@ plt.close()
 
 
 # scatter plot of endemic mineral counts / discovery year
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 
-plt.scatter(discovery_rate.index, discovery_rate['count_endemic'], color='#5FD6D1', marker='o', s=20,
+plt.scatter(discovery_rate.index, discovery_rate['count_endemic'], color='#5FD6D1', marker='o', s=25,
             edgecolors='black', linewidths=0.1)
 
-plt.xlabel('Discovery Year')
-plt.ylabel('Endemic minerals count')
-plt.title('Discovery rate of endemic minerals')
+plt.xlabel('Discovery year')
+plt.ylabel('Minerals count')
+plt.xlim([1800, 2022])
 
 plt.savefig(f"figures/discovery_rate/endemic_scatter.jpeg", dpi=300, format='jpeg')
 
