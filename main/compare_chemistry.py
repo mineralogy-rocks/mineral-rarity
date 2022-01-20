@@ -433,20 +433,6 @@ cooccurrence_size.sort_values(0, inplace=True, ascending=False)
 tu_u_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values(1, ascending=False)[:10]
 
 # create network graphs
-
-## Circle graph
-circular_data = re_true_el_vector.drop_duplicates(ignore_index=True).join(abundance, on=0, how='left')[[0, 1, 'crust_crc_handbook',]].sort_values('crust_crc_handbook')
-circular_data['crust_crc_handbook'] = pd.to_numeric(circular_data['crust_crc_handbook'])
-circular_data['crust_crc_handbook'] = np.log(circular_data['crust_crc_handbook'])
-
-G = nx.from_pandas_edgelist(circular_data, source=0, target=1)
-node_size =  [(v * 10 if not np.isnan(v) else 100) for v in circular_data['crust_crc_handbook'].drop_duplicates().values]
-
-nx.draw_circular(G, with_labels=True, node_size=node_size, width=0.1, font_size=5)
-plt.savefig(f"figures/chemistry/circular_network/re_true_elements.jpeg", dpi=300, format='jpeg')
-plt.close()
-
-
 ## Spring layout
 _initial_data = tu_u_el_vector.reset_index(drop=True).copy()
 _initial_data = _initial_data.groupby([0,1]).size().to_frame(name='size').reset_index()

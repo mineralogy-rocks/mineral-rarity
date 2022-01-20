@@ -36,31 +36,25 @@ locs['locality_counts'] = pd.to_numeric(locs['locality_counts'])
 raw_locality_mineral_pairs, log_locality_mineral_pairs, scaled_locality_1d = transform_data(locs, Scaler)
 
 
-# Original non-scaled data scatter-plot
 sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
-plt.scatter(raw_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='#5FD6D1', marker='o', s=25,
-            edgecolors='black', linewidths=0.1)
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10,5))
+# Original non-scaled data scatter-plot
 
-plt.xlabel('Locality count')
-plt.ylabel('Mineral count')
-
-plt.savefig(f"figures/general/mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
-
-plt.close()
-
+ax[0].scatter(raw_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='green', marker='o', s=60,
+            edgecolor='black', linewidth=1, alpha=0.5)
+ax[0].set_title('a', fontsize = 11)
+ax[0].set(xlabel='Locality count', ylabel='Mineral count')
 
 # Log-transformed data scatter-plot
-sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
-plt.scatter(log_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='#5FD6D1', marker='o', s=25,
-            edgecolors='black', linewidths=0.1)
+ax[1].scatter(log_locality_mineral_pairs['locality_counts'], raw_locality_mineral_pairs['mineral_count'], color='green', marker='o', s=60,
+            edgecolor='black', linewidth=1, alpha=0.5)
+ax[1].set_title('b', fontsize = 11)
+ax[1].set(xlabel='Log (locality count)')
 
-plt.xlabel('Log (locality count)')
-plt.ylabel('Mineral count')
-
-plt.savefig(f"figures/general/log_mineral_locality_pairs.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/general/mineral_locality.jpeg", dpi=300, format='jpeg')
+plt.tight_layout()
 
 plt.close()
-
 
 # Find optimum number of clusters for k-Means
 

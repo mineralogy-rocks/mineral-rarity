@@ -218,8 +218,8 @@ plt.close()
 # scatter plot of endemic mineral counts / discovery year
 sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 
-plt.scatter(discovery_rate.index, discovery_rate['count_endemic'], color='#5FD6D1', marker='o', s=25,
-            edgecolors='black', linewidths=0.1)
+plt.scatter(discovery_rate.index, discovery_rate['count_endemic'], color='green', marker='o', s=60,
+            edgecolor='black', linewidth=1, alpha=0.5)
 
 plt.xlabel('Discovery year')
 plt.ylabel('Minerals count')

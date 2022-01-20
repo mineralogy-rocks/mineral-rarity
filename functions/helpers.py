@@ -209,13 +209,13 @@ def get_ns_obj():
 
 def get_crystal_system_obj():
     return pd.DataFrame([
-        {'system': 'triclinic', 'order': 0, 'color': 'cadetblue' },
-        {'system': 'monoclinic', 'order': 1, 'color': 'teal'},
-        {'system': 'orthorhombic', 'order': 2, 'color': 'indigo'},
-        {'system': 'trigonal', 'order': 3, 'color': 'chartreuse'},
-        {'system': 'tetragonal', 'order': 4, 'color': 'coral'},
-        {'system': 'hexagonal', 'order': 5, 'color': 'gold'},
-        {'system': 'isometric', 'order': 6, 'color': 'crimson'},
+        {'system': 'Triclinic', 'order': 0, 'color': 'cadetblue' },
+        {'system': 'Monoclinic', 'order': 1, 'color': 'teal'},
+        {'system': 'Orthorhombic', 'order': 2, 'color': 'indigo'},
+        {'system': 'Trigonal', 'order': 3, 'color': 'chartreuse'},
+        {'system': 'Tetragonal', 'order': 4, 'color': 'coral'},
+        {'system': 'Hexagonal', 'order': 5, 'color': 'gold'},
+        {'system': 'Isometric', 'order': 6, 'color': 'crimson'},
         ]).set_index('system')
 
 
