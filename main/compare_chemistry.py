@@ -4,14 +4,15 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = 'Arial'
 import seaborn as sns
 import networkx as nx
 from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 
 from modules.gsheet_api import GsheetApi
-from functions.helpers import parse_rruff, parse_mindat, calculate_cooccurrence_matrix, split_by_rarity_groups,\
-    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color, prepare_data, \
-    get_symmetry_indexes
+from functions.helpers import calculate_cooccurrence_matrix, split_by_rarity_groups,\
+    get_mineral_clarks, get_ns_obj, set_edge_community, set_node_community, get_color, prepare_data
 
 # -*- coding: utf-8 -*-
 """
@@ -33,72 +34,58 @@ ns_object = get_ns_obj()
 mr_data = prepare_data(ns, crystal)
 r, re_rr_tr, re_true, re, rr, t, tr, tu, u, tu_u = split_by_rarity_groups(mr_data)
 
-##### RE MINERALS  #####
-tu_u.loc[tu_u['discovery_year'] >= 1950]
-re_true.loc[re_true['discovery_year'] < 1950]
-re_rr_tr.loc[re_rr_tr['discovery_year'] >= 1950]
-tr.loc[tr['discovery_year'] >= 1950]
 
-# during SD period
-u.groupby('CLASS').size()
-re_true.loc[re_true['discovery_year'] < 1950].groupby('CLASS').size()
+# build Nickel-Strunz pie charts
+pie_ = pd.DataFrame(columns=['re', 'rr', 'tr', 'tu', 'u', ])
+for key, item in { 're': re, 'rr': rr, 'tr': tr, 'tu': tu, 'u': u}.items():
+    pie_[key] = item.groupby('CLASS').size() / item.groupby('CLASS').size().sum() * 100
 
-# during MPRD period
-re_rr_tr.loc[re_rr_tr['discovery_year'] >= 1950].groupby('CLASS').size()
-tr.loc[tr['discovery_year'] >= 1950].groupby('CLASS').size()
-
-# further analytics
-re.loc[(re['CLASS'] == 'Elements') & (re['locality_counts'] == 1)]
-re_true.loc[(re_true['CLASS'] == 'Elements') & (re_true['locality_counts'] == 1)]
-
-# during all periods
-RE = pd.DataFrame(re.groupby('CLASS').size(), columns=['RE'])
-tRE = pd.DataFrame(re_true.groupby('CLASS').size(), columns=['tRE'])
-RE.join(tRE, how='inner')
-
-pie_ = u.groupby('CLASS').size()
-pie_ = pd.DataFrame(pie_/pie_.sum() * 100)
 pie_ = pie_.join(ns_object).sort_values('order')
 
-# Pie chart: Nickel-Strunz classes
+def _labels(label):
+    if label > 4:
+        return str(np.round(label, 2)) + ' %'
+    return ''
 
-fig1, ax1 = plt.subplots()
-ax1.pie(pie_[0], colors=pie_['color'], labels=pie_.index, autopct='%1.1f%%',startangle=90)
+# RE, RR and TR species
+fig, ax = plt.subplots(nrows=1, ncols=3)
+plt.rcParams['axes.titlepad'] = 16
 
-ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+ax[0].pie(pie_['re'], colors=pie_['color'], autopct='%1.1f%%', startangle=90, pctdistance=1.17,
+          wedgeprops = {'linewidth': 0.4, 'edgecolor': 'black'}, textprops={ 'fontsize': 7 }, radius=1.3)
+ax[0].set_title('a', fontsize = 11)
 
-plt.savefig(f"figures/chemistry/pie_chart/u_nickel_strunz.jpeg", dpi=300, format='jpeg')
+ax[1].pie(pie_['rr'], colors=pie_['color'], autopct='%1.1f%%',startangle=90, pctdistance=1.17,
+          wedgeprops = {'linewidth': 0.4, 'edgecolor': 'black'}, textprops={ 'fontsize': 7 }, radius=1.3)
+ax[1].set_title('b', fontsize = 11)
 
+ax[2].pie(pie_['tr'], colors=pie_['color'], autopct='%1.1f%%',startangle=90, pctdistance=1.17,
+          wedgeprops = {'linewidth': 0.4, 'edgecolor': 'black'}, textprops={ 'fontsize': 7 }, radius=1.3)
+ax[2].set_title('c', fontsize = 11)
+
+plt.tight_layout()
+plt.legend(pie_.index, fontsize=7, loc='lower right', bbox_to_anchor=(0.3, -0.95), labelspacing=.3)
+
+plt.savefig(f"figures/chemistry/pie_chart/re_rr_tr.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 
-##### RR MINERALS  #####
+# TU and U species
+fig, ax = plt.subplots(nrows=1, ncols=2)
+plt.rcParams['axes.titlepad'] = 16
 
-rr.loc[rr['discovery_year'] < 1950]
+ax[0].pie(pie_['tu'], colors=pie_['color'], autopct='%1.1f%%', startangle=90, pctdistance=1.17,
+          wedgeprops = {'linewidth': 0.4, 'edgecolor': 'black'}, textprops={ 'fontsize': 7 })
+ax[0].set_title('a', fontsize = 11)
 
-# during SD period
-rr.loc[rr['discovery_year'] < 1950].groupby('CLASS').size()
+ax[1].pie(pie_['u'], colors=pie_['color'], autopct='%1.1f%%',startangle=90, pctdistance=1.17,
+          wedgeprops = {'linewidth': 0.4, 'edgecolor': 'black'}, textprops={ 'fontsize': 7 })
+ax[1].set_title('b', fontsize = 11)
 
-# during MPRD period
-rr.loc[rr['discovery_year'] >= 1950].groupby('CLASS').size()
+# plt.tight_layout()
+plt.legend(pie_.index, fontsize=7, loc='lower right', bbox_to_anchor=(0.6, -0.5), labelspacing=.3)
 
-# during all periods
-rr.groupby('CLASS').size()
-
-# during all periods
-pie_ = tu.groupby('CLASS').size()
-pie_ = pie_/pie_.sum() * 100
-
-
-# Pie chart: Nickel-Strunz classes
-
-fig1, ax1 = plt.subplots()
-ax1.pie(pie_, labels=pie_.index, autopct='%1.1f%%',startangle=90)
-
-ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-
-plt.savefig(f"figures/rare_minerals/pie_chart_nickel_strunz.jpeg", dpi=300, format='jpeg')
-
+plt.savefig(f"figures/chemistry/pie_chart/tu_u.jpeg", dpi=300, format='jpeg')
 plt.close()
 
 

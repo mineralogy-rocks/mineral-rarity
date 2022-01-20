@@ -201,9 +201,9 @@ def get_ns_obj():
         {'class': 'Organic Compounds', 'order': 4, 'color': 'coral'},
         {'class': 'Oxides', 'order': 5, 'color': 'gold'},
         {'class': 'Phosphates, Arsenates, Vanadates', 'order': 6, 'color': 'crimson'},
-        {'class': 'Silicates (Germanates)', 'order': 6, 'color': 'purple'},
-        {'class': 'Sulfates (selenates, tellurates, chromates, molybdates, wolframates)', 'order': 6, 'color': 'darkslateblue'},
-        {'class': 'Sulfides and Sulfosalts', 'order': 6, 'color': 'coral'},
+        {'class': 'Silicates (Germanates)', 'order': 7, 'color': 'purple'},
+        {'class': 'Sulfates (selenates, tellurates, chromates, molybdates, wolframates)', 'order': 8, 'color': 'cornflowerblue'},
+        {'class': 'Sulfides and Sulfosalts', 'order': 9, 'color': 'firebrick'},
         ]).set_index('class')
 
 
