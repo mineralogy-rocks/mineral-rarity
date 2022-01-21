@@ -434,7 +434,7 @@ tu_u_el_vector.drop_duplicates(ignore_index=True).groupby(0).count().sort_values
 
 # create network graphs
 ## Spring layout
-_initial_data = tu_u_el_vector.reset_index(drop=True).copy()
+_initial_data = re_true_el_vector.reset_index(drop=True).copy()
 _initial_data = _initial_data.groupby([0,1]).size().to_frame(name='size').reset_index()
 _initial_data['width'] = (_initial_data['size'] - _initial_data['size'].min())/(_initial_data['size'].max()-_initial_data['size'].min())
 
@@ -472,9 +472,9 @@ nx.draw_networkx(
     edgelist=external,
     edge_color="silver",
     edgecolors='black',
-    linewidths=1,
-    font_size=10,
-    font_family='Arial',
+    node_color=[],
+    with_labels=False,
+    linewidths=0,
     width=0.5)
 # Draw nodes and internal edges
 nx.draw_networkx(
@@ -491,7 +491,7 @@ nx.draw_networkx(
     width=0.5)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/spring_network/community/tu_u_GMC.eps", dpi=300, format='eps')
+plt.savefig(f"figures/chemistry/spring_network/community/re_true_GMC.eps", dpi=300, format='eps')
 plt.close()
 
 
