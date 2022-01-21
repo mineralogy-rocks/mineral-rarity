@@ -92,8 +92,7 @@ plt.close()
 
 
 # stacked bar chart of rarity groups discovery rate and with KDEs
-sns.set_context("paper")
-ax1 = sns.set(style="white")
+ax1 = sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 
 fig, ax1 = plt.subplots(figsize=(8, 8), dpi=300)
 
@@ -114,6 +113,8 @@ temp = sns.histplot(
 )
 
 ax1.set(xlim=(1750, 2021))
+plt.xlabel('Discovery Year')
+plt.ylabel('Minerals count')
 
 ax2 = ax1.twinx()
 ax3 = ax1.twinx()
@@ -123,22 +124,18 @@ sns.kdeplot(data=mindat_rruff, x="discovery_year", hue="rarity", palette=['darkb
 
 temp_ = discovery_rate.reset_index().dropna(subset=['symmetry_index'])
 temp_.loc[temp_['symmetry_index'] == np.inf, 'symmetry_index'] = 0
-# sns.lineplot(data=temp_, x="discovery_year", y='symmetry_index', color='red', ax=ax3, legend=False, linewidth=1,
-#              linestyle='--')
-
 sns.kdeplot(data=temp_, x="discovery_year", weights='symmetry_index', ax=ax2, fill=False, color="red", alpha=.3,
             linewidth=1, legend=False)
 
-plt.xlabel('Discovery Year')
-plt.ylabel('Minerals count')
 
 top_bar0 = mpatches.Patch(color='tomato', label='RE')
 top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
 bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
 bottom_bar1 = mpatches.Patch(color='red', label='symmetry index')
-plt.legend(handles=[top_bar0, top_bar, bottom_bar, bottom_bar1])
 
-plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups_kdes.jpeg", dpi=300, format='jpeg')
+plt.legend(handles=[top_bar0, top_bar, bottom_bar, bottom_bar1], loc='upper left')
+plt.axis('off')
+plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups_kdes.eps", dpi=300, format='eps')
 plt.close()
 
 
