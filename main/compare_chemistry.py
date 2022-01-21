@@ -459,7 +459,7 @@ external = [(v, w) for v, w in G.edges if G.edges[v, w]['community'] == 0]
 internal = [(v, w) for v, w in G.edges if G.edges[v, w]['community'] > 0]
 internal_color = ['black' for e in internal]
 
-
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white' })
 node_size = [v * 1000 for v in degree_centrality.values()]
 plt.figure(figsize=(10, 9))
 plt.axis('off')
@@ -471,8 +471,10 @@ nx.draw_networkx(
     node_size=node_size,
     edgelist=external,
     edge_color="silver",
-    linewidths=0.1,
+    edgecolors='black',
+    linewidths=1,
     font_size=10,
+    font_family='Arial',
     width=0.5)
 # Draw nodes and internal edges
 nx.draw_networkx(
@@ -482,13 +484,16 @@ nx.draw_networkx(
     node_size=node_size,
     edgelist=internal,
     edge_color=internal_color,
-    linewidths=0.5,
+    edgecolors='black',
+    linewidths=1,
     font_size=10,
+    font_family='Arial',
     width=0.5)
 
 plt.tight_layout()
-plt.savefig(f"figures/chemistry/spring_network/community/tu_u_GMC.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/spring_network/community/tu_u_GMC.eps", dpi=300, format='eps')
 plt.close()
+
 
 ## test the degree centrality
 (sorted(degree_centrality.items(), key=lambda item: item[1], reverse=True))[:10]
