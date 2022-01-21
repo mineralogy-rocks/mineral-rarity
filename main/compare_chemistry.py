@@ -3,6 +3,7 @@ import numpy as np
 
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'Arial'
@@ -191,7 +192,7 @@ plt.close()
 
 # Dot plot of elements, sorted by goldschmidt groups and elements abundance (for Vitalii)
 
-sns.set_theme(style="whitegrid")
+sns.set_theme(style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': False })
 initial_data = abundance.sort_values(['goldschmidt_classification', 'crust_crc_handbook'], ascending=False)
 
 # Make the PairGrid
@@ -203,32 +204,24 @@ g = sns.PairGrid(data=initial_data,
 g.map(sns.scatterplot, size=initial_data['ion_radius'], linewidth=0.5, marker='o', edgecolor='black')
 
 g.add_legend()
-
-
-# Use the same x axis limits on all columns and add better labels
 g.set(xlim=(0, 100), xlabel="% of minerals", ylabel="")
-
-# Use semantically meaningful titles for the columns
 titles = ['All IMA-approved minerals', 'tRE/All', '(RE + RR)/All', '(RE + RR + TR)/All', 'T/All', 'U/All', '(TU + U)/All']
 
 for ax, title in zip(g.axes.flat, titles):
-
-    # Set a different title for each axes
     ax.set(title=title)
-
-    # Make the grid horizontal instead of vertical
     ax.xaxis.grid(False)
     ax.yaxis.grid(True)
 
 sns.despine(left=True, bottom=True)
 
-plt.savefig(f"figures/chemistry/dot_plot_sorted_by_crustal_abundance_size_ion_radius.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/dot_plot_sorted_by_crustal_abundance_size_ion_radius.eps", dpi=300, format='eps')
 plt.close()
 
 
 # Dot plot of elements, sorted by goldschmidt groups and mineral ratio (for Vitalii)
 
-sns.set_theme(style="whitegrid")
+sns.set_theme(style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
+
 initial_data = abundance.sort_values(['goldschmidt_classification', 'abundance_all'], ascending=False)
 
 # Make the PairGrid
@@ -304,25 +297,28 @@ abundance_log['crust_crc_handbook'] = np.log(abundance_log['crust_crc_handbook']
 abundance_log['abundance_all'] = np.log(abundance_log['abundance_all'])
 abundance_log['Elements'] = abundance_log.index
 
-sns.set_theme(style="whitegrid")
-
+sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 sc = sns.scatterplot(x="abundance_all",
                 y="crust_crc_handbook",
                 hue="goldschmidt_classification",
-                sizes=(1, 2),
-                linewidth=0,
+                linewidth=0.5,
+                edgecolor='black',
+                legend='full',
                 data=abundance_log)
 
 for line in range(0, abundance_log.shape[0]):
-    sc.text(abundance_log['abundance_all'][line] + 0.01, abundance_log['crust_crc_handbook'][line],
+    sc.text(abundance_log['abundance_all'][line] + -0.08, abundance_log['crust_crc_handbook'][line],
             abundance_log['Elements'][line], horizontalalignment='right',
             color='black', weight='light', fontsize='xx-small')
 
-plt.xlabel("log(Number of minerals)")
-plt.ylabel("log(Crustal abundance)")
+# plt.legend(labels=['Chalcophile', 'Lithophile', 'Siderophile', 'Atmophile', ])
+sc.legend_.set_title(None)
+plt.tight_layout()
+plt.xlabel("log (number of minerals)")
+plt.ylabel("log (crustal abundance, ppm)")
 plt.title(None)
 
-plt.savefig(f"figures/chemistry/element_abundance_vs_mineral_clark.jpeg", dpi=300, format='jpeg')
+plt.savefig(f"figures/chemistry/element_abundance_vs_mineral_clark.eps", dpi=300, format='eps')
 plt.close()
 
 
