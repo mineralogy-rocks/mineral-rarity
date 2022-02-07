@@ -94,7 +94,7 @@ plt.close()
 # stacked bar chart of rarity groups discovery rate and with KDEs
 ax1 = sns.set_theme(palette=None, style={ 'figure.facecolor': 'white', 'xtick.bottom': True, 'ytick.left': True })
 
-fig, ax1 = plt.subplots(figsize=(8, 8), dpi=300)
+fig, ax1 = plt.subplots(figsize=(12, 8), dpi=300)
 
 temp = sns.histplot(
     mindat_rruff,
@@ -124,16 +124,21 @@ sns.kdeplot(data=mindat_rruff, x="discovery_year", hue="rarity", palette=['darkb
 
 temp_ = discovery_rate.reset_index().dropna(subset=['symmetry_index'])
 temp_.loc[temp_['symmetry_index'] == np.inf, 'symmetry_index'] = 0
-sns.kdeplot(data=temp_, x="discovery_year", weights='symmetry_index', ax=ax2, fill=False, color="red", alpha=.3,
-            linewidth=1, legend=False)
+# sns.kdeplot(data=temp_, x="discovery_year", weights='symmetry_index', ax=ax2, fill=False, color="red", alpha=.3,
+#             linewidth=1, legend=False)
 
+top_bar0 = mpatches.Patch(color='tomato', label='Endemic')
+top_bar = mpatches.Patch(color='darkblue', label='Rare')
+bottom_bar = mpatches.Patch(color='lightseagreen', label='Ubiquitous')
+# bottom_bar1 = mpatches.Patch(color='red', label='symmetry index')
 
-top_bar0 = mpatches.Patch(color='tomato', label='RE')
-top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
-bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
-bottom_bar1 = mpatches.Patch(color='red', label='symmetry index')
+# top_bar0 = mpatches.Patch(color='tomato', label='RE')
+# top_bar = mpatches.Patch(color='darkblue', label='RR+TR')
+# bottom_bar = mpatches.Patch(color='lightseagreen', label='TU+U')
+# bottom_bar1 = mpatches.Patch(color='red', label='symmetry index')
 
-plt.legend(handles=[top_bar0, top_bar, bottom_bar, bottom_bar1], loc='upper left')
+# plt.legend(handles=[top_bar0, top_bar, bottom_bar, bottom_bar1], loc='upper left')
+plt.legend(handles=[top_bar0, top_bar, bottom_bar, ], loc='upper left')
 plt.axis('off')
 plt.savefig(f"figures/discovery_rate/stacked_all_rarity_groups_kdes.eps", dpi=300, format='eps')
 plt.close()
