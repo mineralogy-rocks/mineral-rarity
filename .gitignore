@@ -2,4 +2,4 @@
 /venv
 gsheets_credentials.json
 functions/__pycache__/
-data/*
+data/mindat_locs.csv
