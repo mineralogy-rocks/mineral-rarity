@@ -18,4 +18,4 @@ This project No. 3007/01/01 has received funding from the **European Union´s Ho
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
